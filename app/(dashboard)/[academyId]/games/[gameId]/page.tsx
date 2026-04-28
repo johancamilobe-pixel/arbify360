@@ -18,10 +18,8 @@ interface Props {
   params: { academyId: string; gameId: string };
 }
 
-export async function generateMetadata({ params }: Props) {
-  const game = await prisma.game.findUnique({ where: { id: params.gameId } });
-  if (!game) return { title: "Juego no encontrado" };
-  return { title: `${game.homeTeam} vs ${game.awayTeam}` };
+export async function generateMetadata() {
+  return { title: "Detalle de Juego" };
 }
 
 export default async function GameDetailPage({ params }: Props) {
