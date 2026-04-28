@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { MobileLayout } from "@/components/layout/mobile-layout";
@@ -11,12 +11,13 @@ interface Props {
 
 export default async function AcademyLayout({ children, params }: Props) {
   const { academyId } = params;
-  const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
 
-  // Una sola query — usuario + membresía actual + todas las membresías activas
+  const supabase = await createServerSupabaseClient();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  if (!authUser) redirect("/sign-in");
+
   const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
+    where: { supabaseId: authUser.id },
     include: {
       memberships: {
         where: { isActive: true },

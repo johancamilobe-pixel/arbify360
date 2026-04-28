@@ -1,14 +1,18 @@
 import { redirect } from "next/navigation";
 import { getUserAcademies } from "@/lib/auth";
 import AcademySelector from "./academy-selector";
-import { SignOutButton } from "@clerk/nextjs";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { SignOutButton } from "./sign-out-button";
 
 export const metadata = { title: "Seleccionar academia" };
 
 export default async function SelectAcademyPage() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/sign-in");
+
   const academies = await getUserAcademies();
 
-  // Sin membresías activas → mostrar pantalla de espera con botón de salir
   if (academies.length === 0) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-background p-6">
@@ -23,26 +27,19 @@ export default async function SelectAcademyPage() {
             Aún no estás asignado a ninguna academia. Contacta al administrador
             de tu academia para que te agregue al sistema.
           </p>
-          <SignOutButton redirectUrl="/sign-in">
-            <button className="px-4 py-2 text-sm font-medium text-white bg-brand-500 hover:bg-brand-600 rounded-lg transition-colors">
-              Cerrar sesión
-            </button>
-          </SignOutButton>
+          <SignOutButton />
         </div>
       </main>
     );
   }
 
-  // Una sola academia → redirigir directo al dashboard
   if (academies.length === 1) {
     redirect(`/${academies[0].academyId}`);
   }
 
-  // Múltiples academias → mostrar selector
   return (
     <main className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="w-full max-w-md">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-6">
             <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center">
@@ -58,16 +55,10 @@ export default async function SelectAcademyPage() {
           </p>
         </div>
 
-        {/* Lista de academias */}
         <AcademySelector academies={academies} />
 
-        {/* Cerrar sesión */}
         <div className="mt-6 text-center">
-          <SignOutButton redirectUrl="/sign-in">
-            <button className="text-sm text-muted-foreground/70 hover:text-muted-foreground transition-colors">
-              Cerrar sesión
-            </button>
-          </SignOutButton>
+          <SignOutButton variant="link" />
         </div>
       </div>
     </main>
