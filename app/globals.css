@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Fondo principal — gris muy oscuro */
+    --background: 220 16% 10%;
+    /* Cards y paneles */
+    --card: 220 14% 14%;
+    /* Texto principal */
+    --foreground: 220 10% 88%;
+    /* Texto secundario / muted */
+    --muted-foreground: 220 8% 55%;
+    /* Bordes */
+    --border: 220 12% 22%;
+    /* Inputs */
+    --input: 220 14% 18%;
+    /* Muted bg */
+    --muted: 220 14% 18%;
+    /* Popover / dropdown */
+    --popover: 220 14% 14%;
+    --popover-foreground: 220 10% 88%;
+    /* Card foreground */
+    --card-foreground: 220 10% 88%;
+    /* Accent */
+    --accent: 220 14% 20%;
+    --accent-foreground: 220 10% 88%;
+    /* Secondary */
+    --secondary: 220 14% 20%;
+    --secondary-foreground: 220 10% 80%;
+    /* Brand (naranja) — se mantiene */
+    --primary: 24.6 95% 53.1%;
+    --primary-foreground: 0 0% 100%;
+    /* Destructivo */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --ring: 24.6 95% 53.1%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  /* Scrollbar oscuro */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(220 16% 10%);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(220 12% 28%);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(220 12% 35%);
+  }
+}
