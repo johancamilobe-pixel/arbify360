@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createGame, updateGame } from "@/actions/games";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, CheckCircle2 } from "lucide-react";
 import { formatTime } from "@/lib/utils";
 
 interface Sport    { id: string; name: string }
@@ -48,6 +48,24 @@ export function GameForm({
   const [error, setError]            = useState<string | null>(null);
   const [conflicts, setConflicts]    = useState<any[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+
+  // Track si hay al menos un árbitro seleccionado para mostrar aviso de auto-confirmación
+  const [hasReferee, setHasReferee] = useState(
+    !!(defaults?.mainRefereeId || defaults?.secondaryRefereeId || defaults?.tableAssistantId)
+  );
+
+  function handleRefereeChange() {
+    // Verificar si hay al menos un árbitro seleccionado
+    const form = document.querySelector("form") as HTMLFormElement | null;
+    if (!form) return;
+    const formData = new FormData(form);
+    const hasAny = !!(
+      formData.get("mainRefereeId") ||
+      formData.get("secondaryRefereeId") ||
+      formData.get("tableAssistantId")
+    );
+    setHasReferee(hasAny);
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -185,8 +203,18 @@ export function GameForm({
       <div className="bg-card rounded-xl border border-border p-5 space-y-4">
         <h2 className="font-semibold text-foreground">Asignación de árbitros</h2>
         <p className="text-sm text-muted-foreground">
-          El sistema verificará conflictos de horario automáticamente al guardar.
+          Al asignar árbitros, el juego se confirma automáticamente. Si hay conflicto de horario, se notificará al guardar.
         </p>
+
+        {/* Aviso de auto-confirmación */}
+        {hasReferee && (
+          <div className="flex items-start gap-2 text-sm text-green-700 bg-green-50 border border-green-200 p-3 rounded-lg">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>
+              Al guardar, el juego quedará <strong>confirmado</strong> automáticamente con los árbitros seleccionados.
+            </span>
+          </div>
+        )}
 
         {referees.length === 0 ? (
           <p className="text-sm text-yellow-600 bg-yellow-50 p-3 rounded-lg">
@@ -199,18 +227,21 @@ export function GameForm({
               label="Árbitro principal"
               referees={referees}
               defaultValue={defaults?.mainRefereeId}
+              onChange={handleRefereeChange}
             />
             <RefereeSelect
               name="secondaryRefereeId"
               label="Árbitro secundario"
               referees={referees}
               defaultValue={defaults?.secondaryRefereeId}
+              onChange={handleRefereeChange}
             />
             <RefereeSelect
               name="tableAssistantId"
               label="Asistente de mesa"
               referees={referees}
               defaultValue={defaults?.tableAssistantId}
+              onChange={handleRefereeChange}
             />
           </div>
         )}
@@ -267,15 +298,22 @@ function RefereeSelect({
   label,
   referees,
   defaultValue,
+  onChange,
 }: {
   name: string;
   label: string;
   referees: { id: string; name: string; category: string | null; licenseNumber: string | null }[];
   defaultValue?: string;
+  onChange?: () => void;
 }) {
   return (
     <Field label={label}>
-      <select name={name} className={inputClass} defaultValue={defaultValue ?? ""}>
+      <select
+        name={name}
+        className={inputClass}
+        defaultValue={defaultValue ?? ""}
+        onChange={onChange}
+      >
         <option value="">Sin asignar</option>
         {referees.map((r) => (
           <option key={r.id} value={r.id}>

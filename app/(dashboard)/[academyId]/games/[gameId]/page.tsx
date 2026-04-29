@@ -13,6 +13,7 @@ import {
 import { Calendar, MapPin, Users, Trophy } from "lucide-react";
 import { GameStatusActions } from "./game-status-actions";
 import { GameEditPanel } from "./game-edit-panel";
+import { RefereeReplaceButton } from "./referee-replace-button";
 
 interface Props {
   params: { academyId: string; gameId: string };
@@ -83,11 +84,32 @@ export default async function GameDetailPage({ params }: Props) {
     game.assignments.map((a) => [a.role, a.userId])
   );
 
+  // Referees formateados para el selector de reemplazo
+  const refereesForReplace = referees.map((m) => ({
+    id: m.userId,
+    name: m.user.name,
+    category: m.refereeCategory?.name ?? null,
+    licenseNumber: m.user.licenseNumber ?? null,
+  }));
+
+  // Set de árbitros con planilla aprobada (no se pueden reemplazar)
+  const approvedUserIds = new Set(
+    game.scoresheet?.submissions
+      .filter((s) => s.status === "APPROVED")
+      .map((s) => s.userId) ?? []
+  );
+
+  // IDs de árbitros ya asignados a este juego (para filtrar en selector)
+  const assignedUserIds = new Set(game.assignments.map((a) => a.userId));
+
   // Formatear fecha para datetime-local input
   function toDatetimeLocal(date: Date) {
     const pad = (n: number) => String(n).padStart(2, "0");
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
   }
+
+  // Determinar si el juego permite reemplazos (no finalizado ni cancelado)
+  const canReplace = game.status === "SCHEDULED" || game.status === "CONFIRMED";
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-5">
@@ -141,23 +163,41 @@ export default async function GameDetailPage({ params }: Props) {
             {game.assignments.map((assignment) => (
               <div
                 key={assignment.id}
-                className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
+                className="py-3 border-b border-border/50 last:border-0"
               >
-                <div>
-                  <p className="font-medium text-foreground">{assignment.user.name}</p>
-                  <p className="text-sm text-muted-foreground">{GAME_ROLE_LABELS[assignment.role]}</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-foreground">{assignment.user.name}</p>
+                    <p className="text-sm text-muted-foreground">{GAME_ROLE_LABELS[assignment.role]}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {assignment.attendance ? (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                        Asistió · {formatTime(assignment.attendance.confirmedAt)}
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">
+                        Sin confirmar
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="text-right">
-                  {assignment.attendance ? (
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                      Asistió · {formatTime(assignment.attendance.confirmedAt)}
-                    </span>
-                  ) : (
-                    <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">
-                      Sin confirmar
-                    </span>
-                  )}
-                </div>
+
+                {/* Botón reemplazar — solo admin, juegos activos, sin planilla aprobada */}
+                {context.role === "ADMIN" && canReplace && (
+                  <div className="mt-2">
+                    <RefereeReplaceButton
+                      academyId={academyId}
+                      gameId={gameId}
+                      assignmentId={assignment.id}
+                      currentUserId={assignment.userId}
+                      currentUserName={assignment.user.name}
+                      role={assignment.role}
+                      referees={refereesForReplace}
+                      hasApprovedSubmission={approvedUserIds.has(assignment.userId)}
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -246,12 +286,7 @@ export default async function GameDetailPage({ params }: Props) {
             name: c.name,
             incomePerGame: c.incomePerGame,
           }))}
-          referees={referees.map((m) => ({
-            id: m.userId,
-            name: m.user.name,
-            category: m.refereeCategory?.name ?? null,
-            licenseNumber: m.user.licenseNumber ?? null,
-          }))}
+          referees={refereesForReplace}
           defaults={{
             homeTeam:            game.homeTeam,
             awayTeam:            game.awayTeam,

@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminRole, requireAcademyAccess } from "@/lib/auth";
-import { checkGameConflicts } from "@/lib/conflict-checker";
+import { checkGameConflicts, checkRefereeConflict } from "@/lib/conflict-checker";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -102,6 +102,9 @@ export async function createGame(
     }
   }
 
+  // Auto-confirmar si tiene al menos un árbitro asignado
+  const autoStatus = assignedReferees.length > 0 ? "CONFIRMED" : "SCHEDULED";
+
   const game = await prisma.game.create({
     data: {
       academyId,
@@ -112,7 +115,7 @@ export async function createGame(
       venue:          data.venue,
       startTime,
       endTime,
-      status:         "SCHEDULED",
+      status:         autoStatus,
       incomeAmount:   category?.incomePerGame ?? null,
     },
   });
@@ -218,6 +221,13 @@ export async function updateGame(
     incomeAmount = category?.incomePerGame ?? null;
   }
 
+  // Auto-confirmar si tiene árbitros, mantener SCHEDULED si no
+  // Solo aplicar auto-status si el juego está en SCHEDULED o CONFIRMED
+  let newStatus = existing.status;
+  if (existing.status === "SCHEDULED" || existing.status === "CONFIRMED") {
+    newStatus = assignedReferees.length > 0 ? "CONFIRMED" : "SCHEDULED";
+  }
+
   // Actualizar el juego
   await prisma.game.update({
     where: { id: gameId },
@@ -230,6 +240,7 @@ export async function updateGame(
       startTime,
       endTime,
       incomeAmount,
+      status:         newStatus,
     },
   });
 
@@ -288,6 +299,116 @@ export async function updateGame(
   revalidatePath(`/${academyId}/games`);
   revalidatePath(`/${academyId}/games/${gameId}`);
   return { success: true, gameId };
+}
+
+// ─── Reemplazar árbitro en un juego (inline desde detalle) ────────────────────
+
+export async function replaceReferee(
+  academyId: string,
+  gameId: string,
+  assignmentId: string,
+  newRefereeId: string
+): Promise<GameFormState> {
+  await requireAdminRole(academyId);
+
+  // Obtener la asignación actual
+  const assignment = await prisma.gameAssignment.findUnique({
+    where: { id: assignmentId },
+    include: {
+      game: {
+        include: {
+          scoresheet: {
+            include: {
+              submissions: { where: { userId: undefined } }, // se filtra abajo
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!assignment || assignment.game.academyId !== academyId) {
+    return { success: false, error: "Asignación no encontrada" };
+  }
+
+  // Verificar que no tenga planilla aprobada
+  const hasApprovedSubmission = await prisma.scoresheetSubmission.findFirst({
+    where: {
+      scoresheet: { gameId },
+      userId: assignment.userId,
+      status: "APPROVED",
+    },
+  });
+
+  if (hasApprovedSubmission) {
+    return {
+      success: false,
+      error: "No se puede reemplazar un árbitro con planilla aprobada",
+    };
+  }
+
+  // Verificar que el nuevo árbitro no esté ya asignado al mismo juego
+  const alreadyAssigned = await prisma.gameAssignment.findFirst({
+    where: { gameId, userId: newRefereeId },
+  });
+
+  if (alreadyAssigned) {
+    return {
+      success: false,
+      error: "Este árbitro ya está asignado a este juego en otro rol",
+    };
+  }
+
+  // Verificar conflictos de horario para el nuevo árbitro
+  const conflict = await checkRefereeConflict(
+    newRefereeId,
+    assignment.game.sportId,
+    assignment.game.startTime,
+    assignment.game.endTime,
+    gameId
+  );
+
+  if (conflict) {
+    return {
+      success: false,
+      error: `Conflicto: ${conflict.userName} ya está asignado en ${conflict.conflictingAcademyName} (${conflict.conflictingVenue})`,
+      conflicts: [
+        {
+          userName: conflict.userName,
+          conflictingAcademyName: conflict.conflictingAcademyName,
+          conflictingVenue: conflict.conflictingVenue,
+          startTime: conflict.startTime,
+          endTime: conflict.endTime,
+        },
+      ],
+    };
+  }
+
+  // Eliminar asistencia del árbitro anterior si existe
+  await prisma.attendance.deleteMany({
+    where: { gameAssignmentId: assignmentId },
+  });
+
+  // Eliminar submission pendiente/rechazada del árbitro anterior si existe
+  if (assignment.game.scoresheet) {
+    await prisma.scoresheetSubmission.deleteMany({
+      where: {
+        scoresheetId: assignment.game.scoresheet.id,
+        userId: assignment.userId,
+        status: { in: ["PENDING", "REJECTED"] },
+      },
+    });
+  }
+
+  // Actualizar la asignación con el nuevo árbitro
+  await prisma.gameAssignment.update({
+    where: { id: assignmentId },
+    data: { userId: newRefereeId },
+  });
+
+  revalidatePath(`/${academyId}/games/${gameId}`);
+  revalidatePath(`/${academyId}/games`);
+  return { success: true };
 }
 
 // ─── Actualizar estado del juego ──────────────────────────────────────────────
