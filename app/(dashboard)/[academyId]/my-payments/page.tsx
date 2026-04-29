@@ -2,8 +2,9 @@ import { requireAcademyAccess, getDbUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Wallet } from "lucide-react";
+import { Wallet, FileText } from "lucide-react";
 import { RefereePagosDetalle } from "./referee-pagos-detalle";
+import Link from "next/link";
 
 interface Props {
   params: { academyId: string };
@@ -20,7 +21,6 @@ export default async function MyPaymentsPage({ params }: Props) {
   const user = await getDbUser();
   if (!user) redirect("/sign-in");
 
-  // Datos de la academia para el recibo
   const academy = await prisma.academy.findUnique({ where: { id: academyId } });
 
   const assignments = await prisma.gameAssignment.findMany({
@@ -70,6 +70,7 @@ export default async function MyPaymentsPage({ params }: Props) {
       monto:           sub?.paymentAmount ? formatCurrency(Number(sub.paymentAmount)) : null,
       montoRaw:        sub?.paymentAmount ? Number(sub.paymentAmount) : 0,
       pagado,
+      paymentId:       sub?.paymentItem?.payment?.id ?? null,
       pagoFecha:       sub?.paymentItem?.payment?.paidAt
         ? formatDate(sub.paymentItem.payment.paidAt)
         : null,
@@ -98,16 +99,28 @@ export default async function MyPaymentsPage({ params }: Props) {
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-brand-100 rounded-xl flex items-center justify-center">
-          <Wallet className="w-5 h-5 text-brand-600" />
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-brand-100 rounded-xl flex items-center justify-center">
+            <Wallet className="w-5 h-5 text-brand-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Mis pagos</h1>
+            <p className="text-sm text-muted-foreground">
+              Resumen de tus cobros por juegos arbitrados
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Mis pagos</h1>
-          <p className="text-sm text-muted-foreground">
-            Resumen de tus cobros por juegos arbitrados
-          </p>
-        </div>
+        {/* Botón resumen completo */}
+        {juegos.length > 0 && (
+          <Link
+            href={`/${academyId}/my-payments/summary`}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-lg transition-colors"
+          >
+            <FileText className="w-4 h-4" />
+            Ver resumen
+          </Link>
+        )}
       </div>
 
       {/* Cards resumen */}
@@ -136,8 +149,7 @@ export default async function MyPaymentsPage({ params }: Props) {
       {/* Detalle con tabs */}
       <RefereePagosDetalle
         pagos={JSON.parse(JSON.stringify(pagosData))}
-        academyName={academy?.name ?? ""}
-        refereeName={context.user.name}
+        academyId={academyId}
       />
     </div>
   );
