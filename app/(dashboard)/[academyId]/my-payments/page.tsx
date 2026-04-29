@@ -2,7 +2,7 @@ import { requireAcademyAccess, getDbUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Wallet, Clock, CheckCircle2, Receipt } from "lucide-react";
+import { Wallet } from "lucide-react";
 import { RefereePagosDetalle } from "./referee-pagos-detalle";
 
 interface Props {
@@ -15,11 +15,13 @@ export default async function MyPaymentsPage({ params }: Props) {
   const { academyId } = params;
   const context = await requireAcademyAccess(academyId);
 
-  // Solo árbitros
   if (context.role !== "REFEREE") redirect(`/${academyId}`);
 
   const user = await getDbUser();
   if (!user) redirect("/sign-in");
+
+  // Datos de la academia para el recibo
+  const academy = await prisma.academy.findUnique({ where: { id: academyId } });
 
   const assignments = await prisma.gameAssignment.findMany({
     where: { userId: user.id, game: { academyId } },
@@ -46,50 +48,48 @@ export default async function MyPaymentsPage({ params }: Props) {
     orderBy: { game: { startTime: "desc" } },
   });
 
+  const METODO_LABELS: Record<string, string> = {
+    CASH: "Efectivo",
+    BANK_TRANSFER: "Transferencia bancaria",
+    NEQUI: "Nequi",
+    DAVIPLATA: "Daviplata",
+  };
+
   const juegos = assignments.map((a) => {
     const sub = a.game.scoresheet?.submissions[0] ?? null;
     const pagado = !!sub?.paymentItem;
+    const metodo = sub?.paymentItem?.payment?.method ?? null;
     return {
-      gameId:      a.game.id,
-      homeTeam:    a.game.homeTeam,
-      awayTeam:    a.game.awayTeam,
-      sport:       a.game.sport.name,
-      category:    a.game.gameCategory.name,
-      date:        formatDate(a.game.startTime),
-      subStatus:   sub?.status ?? null,
-      monto:       sub?.paymentAmount ? formatCurrency(Number(sub.paymentAmount)) : null,
-      montoRaw:    sub?.paymentAmount ? Number(sub.paymentAmount) : 0,
+      gameId:          a.game.id,
+      homeTeam:        a.game.homeTeam,
+      awayTeam:        a.game.awayTeam,
+      sport:           a.game.sport.name,
+      category:        a.game.gameCategory.name,
+      date:            formatDate(a.game.startTime),
+      subStatus:       sub?.status ?? null,
+      monto:           sub?.paymentAmount ? formatCurrency(Number(sub.paymentAmount)) : null,
+      montoRaw:        sub?.paymentAmount ? Number(sub.paymentAmount) : 0,
       pagado,
-      pagoFecha:   sub?.paymentItem?.payment?.paidAt
+      pagoFecha:       sub?.paymentItem?.payment?.paidAt
         ? formatDate(sub.paymentItem.payment.paidAt)
         : null,
-      pagoRecibo:  sub?.paymentItem?.payment?.receiptNumber ?? null,
-      pagoMetodo:  sub?.paymentItem?.payment?.method ?? null,
+      pagoRecibo:      sub?.paymentItem?.payment?.receiptNumber ?? null,
+      pagoMetodo:      metodo,
+      pagoMetodoLabel: metodo ? (METODO_LABELS[metodo] ?? metodo) : null,
     };
   });
 
-  const pendientes = juegos.filter((j) => !j.pagado && j.subStatus === "APPROVED");
-  const pagados    = juegos.filter((j) => j.pagado);
+  const pendientes  = juegos.filter((j) => !j.pagado && j.subStatus === "APPROVED");
+  const pagados     = juegos.filter((j) => j.pagado);
   const sinPlanilla = juegos.filter((j) => !j.pagado && j.subStatus !== "APPROVED");
 
   const totalPendiente = pendientes.reduce((s, j) => s + j.montoRaw, 0);
   const totalPagado    = pagados.reduce((s, j) => s + j.montoRaw, 0);
 
-  const METODO_LABELS: Record<string, string> = {
-    CASH: "Efectivo",
-    BANK_TRANSFER: "Transferencia",
-    NEQUI: "Nequi",
-    DAVIPLATA: "Daviplata",
-  };
-
   const pagosData = {
-    pendientes: pendientes.map((j) => ({ ...j, montoRaw: undefined })),
-    pagados:    pagados.map((j) => ({
-      ...j,
-      montoRaw: undefined,
-      pagoMetodoLabel: j.pagoMetodo ? (METODO_LABELS[j.pagoMetodo] ?? j.pagoMetodo) : null,
-    })),
-    sinPlanilla: sinPlanilla.map((j) => ({ ...j, montoRaw: undefined })),
+    pendientes:     pendientes.map(({ montoRaw, ...j }) => j),
+    pagados:        pagados.map(({ montoRaw, ...j }) => j),
+    sinPlanilla:    sinPlanilla.map(({ montoRaw, ...j }) => j),
     totalPendiente: formatCurrency(totalPendiente),
     totalPagado:    formatCurrency(totalPagado),
     totalJuegos:    juegos.length,
@@ -134,7 +134,11 @@ export default async function MyPaymentsPage({ params }: Props) {
       </div>
 
       {/* Detalle con tabs */}
-      <RefereePagosDetalle pagos={JSON.parse(JSON.stringify(pagosData))} />
+      <RefereePagosDetalle
+        pagos={JSON.parse(JSON.stringify(pagosData))}
+        academyName={academy?.name ?? ""}
+        refereeName={context.user.name}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, CheckCircle2, FileX, Receipt } from "lucide-react";
+import { Clock, CheckCircle2, FileX, Receipt, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Juego {
@@ -29,35 +29,104 @@ interface Props {
     totalPagado:    string;
     totalJuegos:    number;
   };
+  academyName: string;
+  refereeName: string;
 }
 
 type Tab = "pendientes" | "pagados" | "sinPlanilla";
 
-export function RefereePagosDetalle({ pagos }: Props) {
+function PrintableReceipt({ juego, academyName, refereeName }: {
+  juego: Juego;
+  academyName: string;
+  refereeName: string;
+}) {
+  function handlePrint() {
+    const printContent = document.getElementById(`receipt-${juego.gameId}`);
+    if (!printContent) return;
+
+    const win = window.open("", "_blank", "width=600,height=800");
+    if (!win) return;
+
+    win.document.write(`
+      <html>
+        <head>
+          <title>Recibo #${juego.pagoRecibo}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 32px; color: #111; }
+            h1 { font-size: 20px; margin-bottom: 4px; }
+            .sub { color: #666; font-size: 13px; margin-bottom: 24px; }
+            .row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+            .label { color: #666; font-size: 12px; }
+            .value { font-size: 14px; font-weight: 500; }
+            .divider { border-top: 1px solid #ddd; margin: 16px 0; }
+            .total { font-size: 22px; font-weight: bold; text-align: right; }
+            .badge { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; display: inline-block; }
+          </style>
+        </head>
+        <body>
+          <h1>Recibo de Pago</h1>
+          <div class="sub">${academyName}</div>
+          <div class="row">
+            <div>
+              <div class="label">Árbitro</div>
+              <div class="value">${refereeName}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="label">Recibo</div>
+              <div class="value">#${juego.pagoRecibo}</div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="row">
+            <div>
+              <div class="label">Juego</div>
+              <div class="value">${juego.homeTeam} vs ${juego.awayTeam}</div>
+              <div class="label">${juego.sport} · ${juego.category} · ${juego.date}</div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="row">
+            <div>
+              <div class="label">Método de pago</div>
+              <div class="value">${juego.pagoMetodoLabel ?? "—"}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="label">Fecha de pago</div>
+              <div class="value">${juego.pagoFecha ?? "—"}</div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="total">${juego.monto}</div>
+          <div style="margin-top:8px;text-align:right">
+            <span class="badge">✓ Pagado</span>
+          </div>
+        </body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+    win.close();
+  }
+
+  return (
+    <button
+      onClick={handlePrint}
+      className="flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-2.5 py-1.5 rounded-lg transition-colors mt-2"
+    >
+      <Printer className="w-3.5 h-3.5" />
+      Imprimir recibo
+    </button>
+  );
+}
+
+export function RefereePagosDetalle({ pagos, academyName, refereeName }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("pendientes");
 
   const tabs = [
-    {
-      id: "pendientes" as Tab,
-      label: "Por cobrar",
-      count: pagos.pendientes.length,
-      icon: Clock,
-      color: "text-orange-600",
-    },
-    {
-      id: "pagados" as Tab,
-      label: "Pagados",
-      count: pagos.pagados.length,
-      icon: CheckCircle2,
-      color: "text-green-600",
-    },
-    {
-      id: "sinPlanilla" as Tab,
-      label: "Sin planilla",
-      count: pagos.sinPlanilla.length,
-      icon: FileX,
-      color: "text-muted-foreground",
-    },
+    { id: "pendientes" as Tab,   label: "Por cobrar",  count: pagos.pendientes.length,  icon: Clock,         color: "text-orange-600" },
+    { id: "pagados" as Tab,      label: "Pagados",     count: pagos.pagados.length,     icon: CheckCircle2,  color: "text-green-600" },
+    { id: "sinPlanilla" as Tab,  label: "Sin planilla",count: pagos.sinPlanilla.length, icon: FileX,         color: "text-muted-foreground" },
   ];
 
   const current = pagos[activeTab];
@@ -94,8 +163,8 @@ export function RefereePagosDetalle({ pagos }: Props) {
         {current.length === 0 ? (
           <div className="py-10 text-center">
             <p className="text-sm text-muted-foreground/70">
-              {activeTab === "pendientes" && "No tienes juegos pendientes de cobro."}
-              {activeTab === "pagados" && "Aún no tienes pagos registrados."}
+              {activeTab === "pendientes"  && "No tienes juegos pendientes de cobro."}
+              {activeTab === "pagados"     && "Aún no tienes pagos registrados."}
               {activeTab === "sinPlanilla" && "Todos tus juegos tienen planilla subida."}
             </p>
           </div>
@@ -104,10 +173,11 @@ export function RefereePagosDetalle({ pagos }: Props) {
             {current.map((j) => (
               <div
                 key={j.gameId}
+                id={`receipt-${j.gameId}`}
                 className={cn(
                   "rounded-lg border p-3.5",
-                  activeTab === "pendientes" && "bg-orange-50 border-orange-100",
-                  activeTab === "pagados"    && "bg-green-50 border-green-100",
+                  activeTab === "pendientes"  && "bg-orange-50 border-orange-100",
+                  activeTab === "pagados"     && "bg-green-50 border-green-100",
                   activeTab === "sinPlanilla" && "bg-muted/50 border-border"
                 )}
               >
@@ -120,7 +190,6 @@ export function RefereePagosDetalle({ pagos }: Props) {
                       {j.sport} · {j.category} · {j.date}
                     </p>
 
-                    {/* Info de pago */}
                     {activeTab === "pagados" && j.pagoFecha && (
                       <p className="text-xs text-green-700 flex items-center gap-1 mt-1">
                         <Receipt className="w-3 h-3" />
@@ -130,7 +199,6 @@ export function RefereePagosDetalle({ pagos }: Props) {
                       </p>
                     )}
 
-                    {/* Sin planilla */}
                     {activeTab === "sinPlanilla" && (
                       <p className="text-xs text-muted-foreground/70 mt-1">
                         {j.subStatus === "REJECTED"
@@ -138,14 +206,22 @@ export function RefereePagosDetalle({ pagos }: Props) {
                           : "Aún no has subido la planilla"}
                       </p>
                     )}
+
+                    {/* Botón imprimir — solo pagados */}
+                    {activeTab === "pagados" && j.pagoRecibo && (
+                      <PrintableReceipt
+                        juego={j}
+                        academyName={academyName}
+                        refereeName={refereeName}
+                      />
+                    )}
                   </div>
 
-                  {/* Monto */}
                   {j.monto && (
                     <span className={cn(
                       "text-sm font-bold flex-shrink-0",
-                      activeTab === "pendientes" && "text-orange-700",
-                      activeTab === "pagados"    && "text-green-700",
+                      activeTab === "pendientes"  && "text-orange-700",
+                      activeTab === "pagados"     && "text-green-700",
                       activeTab === "sinPlanilla" && "text-muted-foreground"
                     )}>
                       {j.monto}
