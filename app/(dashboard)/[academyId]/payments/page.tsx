@@ -3,23 +3,21 @@ import { getPayments, getIncomes, getPendingPayments } from "@/actions/payments"
 import { PaymentsTabs } from "./payments-tabs";
 
 interface Props {
-  params: Promise<{ academyId: string }>;
-  searchParams: Promise<{
+  params: { academyId: string };
+  searchParams: {
     from?: string;
     to?: string;
     tab?: string;
     period?: string;
-  }>;
+  };
 }
 
 export async function generateMetadata() {
   return { title: "Pagos" };
 }
 
-export default async function PaymentsPage(props: Props) {
-  const params = await props.params;
-  const searchParams = await props.searchParams;
-  const { academyId } = params;
+export default async function PaymentsPage({ params, searchParams }: Props) {
+  const academyId = params.academyId;
   await requireAdminRole(academyId);
 
   const now = new Date();
@@ -32,11 +30,19 @@ export default async function PaymentsPage(props: Props) {
 
   const periodType = (searchParams.period as any) || "MONTHLY";
 
-  const [payments, incomes, pendingGroups] = await Promise.all([
-    getPayments(academyId, startDate, endDate),
-    getIncomes(academyId, startDate, endDate),
-    getPendingPayments(academyId, periodType),
-  ]);
+  let payments, incomes, pendingGroups;
+  try {
+    [payments, incomes, pendingGroups] = await Promise.all([
+      getPayments(academyId, startDate, endDate),
+      getIncomes(academyId, startDate, endDate),
+      getPendingPayments(academyId, periodType),
+    ]);
+  } catch (error) {
+    console.error("Error loading payments data:", error);
+    payments = [];
+    incomes = [];
+    pendingGroups = [];
+  }
 
   const totalPaid = payments
     .filter((p) => p.status === "COMPLETED")
