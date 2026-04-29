@@ -4,14 +4,15 @@ import { redirect } from "next/navigation";
 import { ReceiptView } from "./receipt-view";
 
 interface Props {
-  params: { academyId: string; paymentId: string };
+  params: Promise<{ academyId: string; paymentId: string }>;
 }
 
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata() {
   return { title: "Detalle de pago" };
 }
 
-export default async function PaymentDetailPage({ params }: Props) {
+export default async function PaymentDetailPage(props: Props) {
+  const params = await props.params;
   const { academyId, paymentId } = params;
   await requireAdminRole(academyId);
 

@@ -3,20 +3,22 @@ import { getPayments, getIncomes, getPendingPayments } from "@/actions/payments"
 import { PaymentsTabs } from "./payments-tabs";
 
 interface Props {
-  params: { academyId: string };
-  searchParams: {
+  params: Promise<{ academyId: string }>;
+  searchParams: Promise<{
     from?: string;
     to?: string;
     tab?: string;
     period?: string;
-  };
+  }>;
 }
 
 export async function generateMetadata() {
   return { title: "Pagos" };
 }
 
-export default async function PaymentsPage({ params, searchParams }: Props) {
+export default async function PaymentsPage(props: Props) {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
   const { academyId } = params;
   await requireAdminRole(academyId);
 
@@ -51,7 +53,6 @@ export default async function PaymentsPage({ params, searchParams }: Props) {
         </p>
       </div>
 
-      {/* Cards resumen */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-card rounded-xl border border-border p-4">
           <p className="text-xs text-muted-foreground font-medium">
