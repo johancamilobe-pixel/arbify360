@@ -24,11 +24,16 @@ export default async function GamesPage({ params, searchParams }: Props) {
   const context = await requireAcademyAccess(academyId);
 
   const statusFilter = searchParams.status;
+  const isReferee = context.role === "REFEREE";
 
   const games = await prisma.game.findMany({
     where: {
       academyId,
       ...(statusFilter ? { status: statusFilter as any } : {}),
+      // Árbitro: solo ve juegos donde está asignado actualmente
+      ...(isReferee
+        ? { assignments: { some: { userId: context.user.id } } }
+        : {}),
     },
     include: {
       sport: true,
@@ -41,7 +46,7 @@ export default async function GamesPage({ params, searchParams }: Props) {
   });
 
   const statusTabs = [
-    { label: "Todos",      value: undefined },
+    { label: "Todos",       value: undefined },
     { label: "Programados", value: "SCHEDULED" },
     { label: "Confirmados", value: "CONFIRMED" },
     { label: "Finalizados", value: "FINISHED" },
@@ -54,7 +59,11 @@ export default async function GamesPage({ params, searchParams }: Props) {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Juegos</h1>
-          <p className="text-muted-foreground text-sm mt-1">{games.length} juego{games.length !== 1 ? "s" : ""} encontrado{games.length !== 1 ? "s" : ""}</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            {isReferee
+              ? `${games.length} juego${games.length !== 1 ? "s" : ""} asignado${games.length !== 1 ? "s" : ""}`
+              : `${games.length} juego${games.length !== 1 ? "s" : ""} encontrado${games.length !== 1 ? "s" : ""}`}
+          </p>
         </div>
         {context.role === "ADMIN" && (
           <Link
@@ -85,11 +94,12 @@ export default async function GamesPage({ params, searchParams }: Props) {
         ))}
       </div>
 
-      {/* Serializar para client component */}
       {games.length === 0 ? (
         <div className="text-center py-16 bg-card rounded-xl border border-border">
           <Calendar className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
-          <p className="text-muted-foreground font-medium">No hay juegos</p>
+          <p className="text-muted-foreground font-medium">
+            {isReferee ? "No tienes juegos asignados" : "No hay juegos"}
+          </p>
           {context.role === "ADMIN" && (
             <Link
               href={`/${academyId}/games/new`}

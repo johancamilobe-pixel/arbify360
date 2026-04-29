@@ -20,12 +20,17 @@ export default async function ScoresheetsPage({ params, searchParams }: Props) {
   const context = await requireAcademyAccess(academyId);
 
   const filter = searchParams.filter;
+  const isReferee = context.role === "REFEREE";
 
-  // Traer juegos que tienen planilla o están finalizados/confirmados
+  // Traer juegos confirmados/finalizados
+  // Árbitro: solo los juegos donde está asignado actualmente
   const games = await prisma.game.findMany({
     where: {
       academyId,
       status: { in: ["CONFIRMED", "FINISHED"] },
+      ...(isReferee
+        ? { assignments: { some: { userId: context.user.id } } }
+        : {}),
     },
     include: {
       sport: true,
@@ -44,35 +49,54 @@ export default async function ScoresheetsPage({ params, searchParams }: Props) {
 
   // Calcular estado de planilla por juego
   const gamesWithStatus = games.map((game) => {
-    const totalAssigned = game.assignments.length;
     const submissions = game.scoresheet?.submissions ?? [];
+
+    if (isReferee) {
+      // Para árbitro: estado basado solo en su propia submission
+      const mySubmission = submissions.find((s) => s.userId === context.user.id);
+      const myStatus = mySubmission?.status ?? null;
+
+      let status: "complete" | "pending" | "incomplete";
+      if (myStatus === "APPROVED") status = "complete";
+      else if (myStatus === "PENDING") status = "pending";
+      else status = "incomplete";
+
+      return {
+        game,
+        totalAssigned: 1,
+        approved: myStatus === "APPROVED" ? 1 : 0,
+        pending:  myStatus === "PENDING"  ? 1 : 0,
+        rejected: myStatus === "REJECTED" ? 1 : 0,
+        missing:  !mySubmission ? 1 : 0,
+        status,
+      };
+    }
+
+    // Para admin: estado basado en todos los árbitros asignados
+    const totalAssigned = game.assignments.length;
     const approved = submissions.filter((s) => s.status === "APPROVED").length;
     const pending  = submissions.filter((s) => s.status === "PENDING").length;
     const rejected = submissions.filter((s) => s.status === "REJECTED").length;
     const missing  = totalAssigned - submissions.length;
 
     let status: "complete" | "pending" | "incomplete";
-    if (approved === totalAssigned && totalAssigned > 0) {
-      status = "complete";
-    } else if (pending > 0) {
-      status = "pending";
-    } else {
-      status = "incomplete";
-    }
+    if (approved === totalAssigned && totalAssigned > 0) status = "complete";
+    else if (pending > 0) status = "pending";
+    else status = "incomplete";
 
     return { game, totalAssigned, approved, pending, rejected, missing, status };
   });
 
-  // Filtrar
+  // Filtrar por tab
   const filtered = filter
     ? gamesWithStatus.filter((g) => g.status === filter)
     : gamesWithStatus;
 
   const tabs = [
-    { label: "Todos",       value: undefined,      count: gamesWithStatus.length },
-    { label: "Pendientes",  value: "pending",      count: gamesWithStatus.filter((g) => g.status === "pending").length },
-    { label: "Incompletas", value: "incomplete",    count: gamesWithStatus.filter((g) => g.status === "incomplete").length },
-    { label: "Completas",   value: "complete",      count: gamesWithStatus.filter((g) => g.status === "complete").length },
+    { label: "Todos",       value: undefined,   count: gamesWithStatus.length },
+    { label: "Pendientes",  value: "pending",   count: gamesWithStatus.filter((g) => g.status === "pending").length },
+    { label: "Incompletas", value: "incomplete", count: gamesWithStatus.filter((g) => g.status === "incomplete").length },
+    { label: "Completas",   value: "complete",  count: gamesWithStatus.filter((g) => g.status === "complete").length },
   ];
 
   return (
@@ -80,7 +104,9 @@ export default async function ScoresheetsPage({ params, searchParams }: Props) {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">Planillas</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Revisión de planillas de juegos confirmados y finalizados
+          {isReferee
+            ? "Tus planillas de juegos asignados"
+            : "Revisión de planillas de juegos confirmados y finalizados"}
         </p>
       </div>
 
@@ -106,7 +132,9 @@ export default async function ScoresheetsPage({ params, searchParams }: Props) {
       {filtered.length === 0 ? (
         <div className="text-center py-16 bg-card rounded-xl border border-border">
           <ClipboardList className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
-          <p className="text-muted-foreground font-medium">No hay planillas para mostrar</p>
+          <p className="text-muted-foreground font-medium">
+            {isReferee ? "No tienes planillas para mostrar" : "No hay planillas para mostrar"}
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -134,36 +162,38 @@ export default async function ScoresheetsPage({ params, searchParams }: Props) {
                   {status === "complete" && (
                     <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-medium">
                       <CheckCircle className="w-3 h-3" />
-                      Completa
+                      {isReferee ? "Aprobada" : "Completa"}
                     </span>
                   )}
                   {status === "pending" && (
                     <span className="flex items-center gap-1 text-xs bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full font-medium">
                       <Clock className="w-3 h-3" />
-                      {pending} pendiente{pending !== 1 ? "s" : ""}
+                      {isReferee ? "En revisión" : `${pending} pendiente${pending !== 1 ? "s" : ""}`}
                     </span>
                   )}
                   {status === "incomplete" && (
                     <span className="flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2.5 py-1 rounded-full font-medium">
                       <XCircle className="w-3 h-3" />
-                      {missing} sin subir
+                      {isReferee ? "Sin subir" : `${missing} sin subir`}
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Barra de progreso */}
-              <div className="mt-3 flex items-center gap-3">
-                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-green-500 rounded-full transition-all"
-                    style={{ width: `${totalAssigned > 0 ? (approved / totalAssigned) * 100 : 0}%` }}
-                  />
+              {/* Barra de progreso — solo admin */}
+              {!isReferee && (
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 rounded-full transition-all"
+                      style={{ width: `${totalAssigned > 0 ? (approved / totalAssigned) * 100 : 0}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground/70 flex-shrink-0">
+                    {approved}/{totalAssigned}
+                  </span>
                 </div>
-                <span className="text-xs text-muted-foreground/70 flex-shrink-0">
-                  {approved}/{totalAssigned}
-                </span>
-              </div>
+              )}
             </Link>
           ))}
         </div>
