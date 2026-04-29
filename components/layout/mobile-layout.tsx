@@ -9,6 +9,7 @@ interface Props {
   academyId:    string;
   academyName:  string;
   role:         "ADMIN" | "REFEREE";
+  userName:     string;
   userAcademies: {
     academyId:    string;
     academyName:  string;
@@ -18,16 +19,14 @@ interface Props {
   children: React.ReactNode;
 }
 
-export function MobileLayout({ academyId, academyName, role, userAcademies, children }: Props) {
+export function MobileLayout({ academyId, academyName, role, userName, userAcademies, children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
 
-  // Cierra el sidebar al navegar
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
 
-  // Cierra al hacer Escape
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") setSidebarOpen(false);
@@ -45,6 +44,7 @@ export function MobileLayout({ academyId, academyName, role, userAcademies, chil
           academyId={academyId}
           academyName={academyName}
           role={role}
+          userName={userName}
           userAcademies={userAcademies}
         />
       </div>
@@ -52,17 +52,16 @@ export function MobileLayout({ academyId, academyName, role, userAcademies, chil
       {/* ── Sidebar móvil (overlay) ── */}
       {sidebarOpen && (
         <>
-          {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/50 z-40 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
-          {/* Drawer */}
           <div className="fixed inset-y-0 left-0 z-50 flex lg:hidden">
             <Sidebar
               academyId={academyId}
               academyName={academyName}
               role={role}
+              userName={userName}
               userAcademies={userAcademies}
             />
           </div>

@@ -49,6 +49,7 @@ export default async function AcademyLayout({ children, params }: Props) {
       academyId={context.academyId}
       academyName={context.academyName}
       role={context.role}
+      userName={user.name}
       userAcademies={userAcademies}
     >
       {children}

@@ -20,6 +20,7 @@ interface SidebarProps {
   academyId: string;
   academyName: string;
   role: "ADMIN" | "REFEREE";
+  userName: string;
   userAcademies: {
     academyId: string;
     academyName: string;
@@ -28,77 +29,24 @@ interface SidebarProps {
   }[];
 }
 
-// Íconos y rutas de navegación
 function getNavItems(academyId: string, role: "ADMIN" | "REFEREE") {
   const base = `/${academyId}`;
   const all = [
-    {
-      label: "Inicio",
-      href: base,
-      icon: Home,
-      roles: ["ADMIN", "REFEREE"],
-      exact: true,
-    },
-    {
-      label: "Juegos",
-      href: `${base}/games`,
-      icon: Calendar,
-      roles: ["ADMIN", "REFEREE"],
-    },
-    {
-      label: "Planillas",
-      href: `${base}/scoresheets`,
-      icon: ClipboardList,
-      roles: ["ADMIN", "REFEREE"],
-    },
-    {
-      label: "Disponibilidad",
-      href: `${base}/availability`,
-      icon: Calendar,
-      roles: ["ADMIN", "REFEREE"],
-    },
-    {
-      label: "Asistencia",
-      href: `${base}/attendance`,
-      icon: ClipboardCheck,
-      roles: ["ADMIN", "REFEREE"],
-    },
-    {
-      label: "Árbitros",
-      href: `${base}/referees`,
-      icon: Users,
-      roles: ["ADMIN"],
-    },
-    {
-      label: "Pagos",
-      href: `${base}/payments`,
-      icon: Wallet,
-      roles: ["ADMIN"],
-    },
-    {
-      label: "Reportes",
-      href: `${base}/reports`,
-      icon: BarChart3,
-      roles: ["ADMIN"],
-    },
-    {
-      label: "Configuración",
-      href: `${base}/settings`,
-      icon: Settings,
-      roles: ["ADMIN"],
-    },
-    {
-      label: "Mi perfil",
-      href: `${base}/profile`,
-      icon: User,
-      roles: ["ADMIN", "REFEREE"],
-    },
+    { label: "Inicio",        href: base,                    icon: Home,          roles: ["ADMIN", "REFEREE"], exact: true },
+    { label: "Juegos",        href: `${base}/games`,         icon: Calendar,      roles: ["ADMIN", "REFEREE"] },
+    { label: "Planillas",     href: `${base}/scoresheets`,   icon: ClipboardList, roles: ["ADMIN", "REFEREE"] },
+    { label: "Disponibilidad",href: `${base}/availability`,  icon: Calendar,      roles: ["ADMIN", "REFEREE"] },
+    { label: "Asistencia",    href: `${base}/attendance`,    icon: ClipboardCheck,roles: ["ADMIN", "REFEREE"] },
+    { label: "Árbitros",      href: `${base}/referees`,      icon: Users,         roles: ["ADMIN"] },
+    { label: "Pagos",         href: `${base}/payments`,      icon: Wallet,        roles: ["ADMIN"] },
+    { label: "Reportes",      href: `${base}/reports`,       icon: BarChart3,     roles: ["ADMIN"] },
+    { label: "Configuración", href: `${base}/settings`,      icon: Settings,      roles: ["ADMIN"] },
+    { label: "Mi perfil",     href: `${base}/profile`,       icon: User,          roles: ["ADMIN", "REFEREE"] },
   ];
-
   return all.filter((item) => item.roles.includes(role));
 }
 
-export function Sidebar({ academyId, academyName, role, userAcademies }: SidebarProps) {
+export function Sidebar({ academyId, academyName, role, userName, userAcademies }: SidebarProps) {
   const pathname = usePathname();
   const navItems = getNavItems(academyId, role);
 
@@ -106,6 +54,14 @@ export function Sidebar({ academyId, academyName, role, userAcademies }: Sidebar
     if (exact) return pathname === href;
     return pathname.startsWith(href);
   };
+
+  // Iniciales para el avatar
+  const initials = userName
+    .split(" ")
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
 
   return (
     <aside className="flex flex-col h-full w-64 bg-black text-white">
@@ -149,16 +105,24 @@ export function Sidebar({ academyId, academyName, role, userAcademies }: Sidebar
         </ul>
       </nav>
 
-      {/* Badge de rol */}
-      <div className="px-6 py-4 border-t border-white/10">
-        <span className={cn(
-          "text-xs font-medium px-2 py-1 rounded-full",
-          role === "ADMIN"
-            ? "bg-brand-500/20 text-brand-400"
-            : "bg-white/10 text-muted-foreground/70"
-        )}>
-          {role === "ADMIN" ? "Administrador" : "Árbitro"}
-        </span>
+      {/* Usuario + rol */}
+      <div className="px-4 py-4 border-t border-white/10">
+        <div className="flex items-center gap-3">
+          {/* Avatar con iniciales */}
+          <div className="w-8 h-8 rounded-full bg-brand-500/20 border border-brand-500/30 flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-semibold text-brand-400">{initials}</span>
+          </div>
+          {/* Nombre + rol */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-white truncate">{userName}</p>
+            <p className={cn(
+              "text-xs font-medium",
+              role === "ADMIN" ? "text-brand-400" : "text-white/40"
+            )}>
+              {role === "ADMIN" ? "Administrador" : "Árbitro"}
+            </p>
+          </div>
+        </div>
       </div>
     </aside>
   );
