@@ -1,15 +1,12 @@
+import { Suspense } from "react";
 import { requireAdminRole } from "@/lib/auth";
 import { getPayments, getIncomes, getPendingPayments } from "@/actions/payments";
 import { PaymentsTabs } from "./payments-tabs";
 
+
 interface Props {
   params: { academyId: string };
-  searchParams: {
-    from?: string;
-    to?: string;
-    tab?: string;
-    period?: string;
-  };
+  searchParams: { [key: string]: string | undefined };
 }
 
 export async function generateMetadata() {
@@ -28,21 +25,13 @@ export default async function PaymentsPage({ params, searchParams }: Props) {
     ? new Date(searchParams.to)
     : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-  const periodType = (searchParams.period as any) || "MONTHLY";
+  const periodType = (searchParams.period as string) || "MONTHLY";
 
-  let payments, incomes, pendingGroups;
-  try {
-    [payments, incomes, pendingGroups] = await Promise.all([
-      getPayments(academyId, startDate, endDate),
-      getIncomes(academyId, startDate, endDate),
-      getPendingPayments(academyId, periodType),
-    ]);
-  } catch (error) {
-    console.error("Error loading payments data:", error);
-    payments = [];
-    incomes = [];
-    pendingGroups = [];
-  }
+  const [payments, incomes, pendingGroups] = await Promise.all([
+    getPayments(academyId, startDate, endDate),
+    getIncomes(academyId, startDate, endDate),
+    getPendingPayments(academyId, periodType as any),
+  ]);
 
   const totalPaid = payments
     .filter((p) => p.status === "COMPLETED")
@@ -55,7 +44,7 @@ export default async function PaymentsPage({ params, searchParams }: Props) {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">Pagos</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Gestión de egresos a árbitros e ingresos de equipos/ligas
+          Gestion de egresos a arbitros e ingresos de equipos/ligas
         </p>
       </div>
 
@@ -72,13 +61,13 @@ export default async function PaymentsPage({ params, searchParams }: Props) {
             }).format(totalPending)}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {pendingGroups.length} árbitro
+            {pendingGroups.length} arbitro
             {pendingGroups.length !== 1 ? "s" : ""}
           </p>
         </div>
         <div className="bg-card rounded-xl border border-border p-4">
           <p className="text-xs text-muted-foreground font-medium">
-            Pagado este período
+            Pagado este periodo
           </p>
           <p className="text-xl font-bold text-red-600 mt-1">
             {new Intl.NumberFormat("es-CO", {
@@ -111,14 +100,16 @@ export default async function PaymentsPage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <PaymentsTabs
-        academyId={academyId}
-        payments={payments}
-        incomes={incomes}
-        pendingGroups={pendingGroups}
-        currentPeriod={periodType}
-        currentTab={searchParams.tab || "pending"}
-      />
+      <Suspense fallback={<div className="h-64 w-full rounded-xl bg-muted animate-pulse" />}>
+        <PaymentsTabs
+          academyId={academyId}
+          payments={JSON.parse(JSON.stringify(payments))}
+          incomes={JSON.parse(JSON.stringify(incomes))}
+          pendingGroups={JSON.parse(JSON.stringify(pendingGroups))}
+          currentPeriod={periodType}
+          currentTab={searchParams.tab || "pending"}
+        />
+      </Suspense>
     </div>
   );
 }
