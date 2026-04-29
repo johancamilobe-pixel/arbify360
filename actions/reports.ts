@@ -84,12 +84,11 @@ export async function getFinancialSummary(
     return sum + gameExpenses;
   }, 0);
 
-  // Pagos pendientes: submissions aprobadas que aún no se han marcado como pagadas
-  // Por ahora (pre Fase B), TODAS las aprobadas son "pendientes de pago"
-  // En Fase B agregaremos el modelo Payment para distinguir pagadas vs no pagadas
+  // Pagos pendientes: submissions aprobadas SIN PaymentItem asociado
   const allApprovedSubmissions = await prisma.scoresheetSubmission.findMany({
     where: {
       status: "APPROVED",
+      paymentItem: null, // Solo las que NO tienen pago
       scoresheet: {
         game: {
           academyId,
@@ -183,6 +182,7 @@ export async function getPendingPaymentsByReferee(
   const submissions = await prisma.scoresheetSubmission.findMany({
     where: {
       status: "APPROVED",
+      paymentItem: null, // Solo las que NO tienen pago
       scoresheet: {
         game: {
           academyId,

@@ -11,6 +11,7 @@ import {
   User,
   Home,
   ClipboardCheck,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AcademySwitcher } from "./academy-switcher";
@@ -66,6 +67,12 @@ function getNavItems(academyId: string, role: "ADMIN" | "REFEREE") {
       label: "Árbitros",
       href: `${base}/referees`,
       icon: Users,
+      roles: ["ADMIN"],
+    },
+    {
+      label: "Pagos",
+      href: `${base}/payments`,
+      icon: Wallet,
       roles: ["ADMIN"],
     },
     {
