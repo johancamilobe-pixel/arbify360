@@ -1,0 +1,384 @@
+// ArbiFy360 — Prisma Schema
+// Stack: PostgreSQL + Prisma
+// Auth: Clerk (clerkId como referencia externa)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum AcademyRole {
+  ADMIN
+  REFEREE
+}
+
+enum GameRole {
+  MAIN_REFEREE // Árbitro principal de campo
+  SECONDARY_REFEREE // Árbitro secundario de campo
+  TABLE_ASSISTANT // Asistente de mesa
+}
+
+enum GameStatus {
+  SCHEDULED // Programado
+  CONFIRMED // Confirmado
+  FINISHED // Finalizado
+  CANCELLED // Cancelado
+}
+
+enum SubmissionStatus {
+  PENDING // Pendiente de revisión
+  APPROVED // Aprobado → genera registro de pago
+  REJECTED // Rechazado → árbitro debe resubir
+}
+
+enum PaymentStatus {
+  COMPLETED // Pago realizado
+  VOIDED    // Pago anulado
+}
+
+enum PaymentMethod {
+  CASH              // Efectivo
+  BANK_TRANSFER     // Transferencia bancaria
+  NEQUI             // Nequi
+  DAVIPLATA         // Daviplata
+}
+
+enum PaymentPeriodType {
+  DAILY      // Diario
+  WEEKLY     // Semanal
+  BIWEEKLY   // Quincenal
+  MONTHLY    // Mensual
+}
+
+enum IncomeSource {
+  TEAM    // Equipo
+  CLUB    // Club
+  LEAGUE  // Liga
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// USUARIOS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id             String    @id @default(cuid())
+  supabaseId     String?  @unique
+  email          String    @unique
+  name           String
+  firstName      String?
+  lastName       String?
+  documentType   String?
+  documentNumber String?
+  birthDate      DateTime? @db.Date
+  phone          String?
+  phone2         String?
+  licenseNumber  String?
+  photoUrl       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  memberships           AcademyMembership[]
+  gameAssignments       GameAssignment[]
+  scoresheetSubmissions ScoresheetSubmission[]
+  approvedSubmissions   ScoresheetSubmission[] @relation("ApprovedBy")
+  availability          Availability[]
+  paymentsReceived      Payment[]              @relation("PaymentsReceived")
+  paymentsMade          Payment[]              @relation("PaymentsMade")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACADEMIAS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Academy {
+  id        String   @id @default(cuid())
+  name      String
+  logoUrl   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships       AcademyMembership[]
+  sports            AcademySport[]
+  gameCategories    GameCategory[]
+  refereeCategories RefereeCategory[]
+  games             Game[]
+  payments          Payment[]
+  incomes           Income[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEPORTES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Sport {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  academySports AcademySport[]
+  games         Game[]
+}
+
+model AcademySport {
+  id        String   @id @default(cuid())
+  academyId String
+  sportId   String
+  createdAt DateTime @default(now())
+
+  academy Academy @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  sport   Sport   @relation(fields: [sportId], references: [id])
+
+  @@unique([academyId, sportId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MEMBRESÍAS (User ↔ Academy)
+// Un árbitro puede pertenecer a múltiples academias.
+// La tarifa se hereda de la categoría de árbitro asignada.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AcademyMembership {
+  id                String      @id @default(cuid())
+  userId            String
+  academyId         String
+  role              AcademyRole
+  refereeCategoryId String?
+  isActive          Boolean     @default(true)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  academy         Academy          @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  refereeCategory RefereeCategory? @relation(fields: [refereeCategoryId], references: [id])
+
+  @@unique([userId, academyId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CATEGORÍAS DE ÁRBITROS (personalizables por academia)
+// Ahora incluye ratePerGame — tarifa que aplica a todos los árbitros de esta categoría.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model RefereeCategory {
+  id          String   @id @default(cuid())
+  academyId   String
+  name        String
+  ratePerGame Decimal? @db.Decimal(10, 2) // Tarifa por juego de esta categoría
+  createdAt   DateTime @default(now())
+
+  academy     Academy             @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  memberships AcademyMembership[]
+
+  @@unique([academyId, name])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CATEGORÍAS DE JUEGO
+// ─────────────────────────────────────────────────────────────────────────────
+
+model GameCategory {
+  id            String   @id @default(cuid())
+  academyId     String
+  name          String
+  incomePerGame Decimal? @db.Decimal(10, 2)
+  createdAt     DateTime @default(now())
+
+  academy Academy @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  games   Game[]
+
+  @@unique([academyId, name])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// JUEGOS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Game {
+  id             String     @id @default(cuid())
+  academyId      String
+  sportId        String
+  gameCategoryId String
+  homeTeam       String
+  awayTeam       String
+  venue          String
+  startTime      DateTime
+  endTime        DateTime
+  status         GameStatus @default(SCHEDULED)
+  incomeAmount   Decimal?   @db.Decimal(10, 2)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  academy      Academy          @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  sport        Sport            @relation(fields: [sportId], references: [id])
+  gameCategory GameCategory     @relation(fields: [gameCategoryId], references: [id])
+  assignments  GameAssignment[]
+  scoresheet   Scoresheet?
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ASIGNACIONES DE ÁRBITROS A JUEGOS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model GameAssignment {
+  id        String   @id @default(cuid())
+  gameId    String
+  userId    String
+  role      GameRole
+  createdAt DateTime @default(now())
+
+  game       Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attendance Attendance?
+
+  @@unique([gameId, userId])
+  @@unique([gameId, role])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ASISTENCIA
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Attendance {
+  id               String   @id @default(cuid())
+  gameAssignmentId String   @unique
+  confirmedAt      DateTime @default(now())
+  latitude         Float?
+  longitude        Float?
+
+  gameAssignment GameAssignment @relation(fields: [gameAssignmentId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PLANILLA
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Scoresheet {
+  id        String   @id @default(cuid())
+  gameId    String   @unique
+  createdAt DateTime @default(now())
+
+  game        Game                   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  submissions ScoresheetSubmission[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUBIDAS DE PLANILLA
+// paymentAmount: snapshot de la tarifa de la categoría al momento de aprobar.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ScoresheetSubmission {
+  id             String           @id @default(cuid())
+  scoresheetId   String
+  userId         String
+  role           GameRole
+  photoUrl       String
+  refereeComment String?
+  status         SubmissionStatus @default(PENDING)
+  adminComment   String?
+  paymentAmount  Decimal?         @db.Decimal(10, 2)
+  approvedById   String?
+  approvedAt     DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  scoresheet Scoresheet @relation(fields: [scoresheetId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approvedBy User?      @relation("ApprovedBy", fields: [approvedById], references: [id])
+  paymentItem PaymentItem?
+
+  @@unique([scoresheetId, userId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DISPONIBILIDAD
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Availability {
+  id          String   @id @default(cuid())
+  userId      String
+  academyId   String
+  date        DateTime @db.Date
+  startTime   String
+  endTime     String
+  isAvailable Boolean  @default(true)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, academyId, date])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGOS A ÁRBITROS
+// Un Payment agrupa múltiples juegos pagados a un árbitro en un período.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Payment {
+  id            String            @id @default(cuid())
+  academyId     String
+  refereeId     String            // User.id del árbitro
+  periodType    PaymentPeriodType
+  periodStart   DateTime          @db.Date
+  periodEnd     DateTime          @db.Date
+  totalAmount   Decimal           @db.Decimal(10, 2)
+  method        PaymentMethod
+  status        PaymentStatus     @default(COMPLETED)
+  notes         String?
+  receiptNumber String?           // Número de recibo auto-generado
+  paidById      String            // Admin que registró el pago
+  paidAt        DateTime          @default(now())
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  academy  Academy       @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  referee  User          @relation("PaymentsReceived", fields: [refereeId], references: [id], onDelete: Cascade)
+  paidBy   User          @relation("PaymentsMade", fields: [paidById], references: [id])
+  items    PaymentItem[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ITEMS DE PAGO
+// Cada item conecta un Payment con un ScoresheetSubmission específico.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model PaymentItem {
+  id                     String  @id @default(cuid())
+  paymentId              String
+  scoresheetSubmissionId String  @unique // Cada submission solo se puede pagar una vez
+  amount                 Decimal @db.Decimal(10, 2)
+
+  payment              Payment              @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  scoresheetSubmission ScoresheetSubmission @relation(fields: [scoresheetSubmissionId], references: [id])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INGRESOS DE ACADEMIA
+// Pagos recibidos de equipos, clubes o ligas.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Income {
+  id          String        @id @default(cuid())
+  academyId   String
+  source      IncomeSource
+  sourceName  String        // Nombre del equipo/club/liga
+  description String?
+  amount      Decimal       @db.Decimal(10, 2)
+  method      PaymentMethod
+  date        DateTime      @db.Date
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  academy Academy @relation(fields: [academyId], references: [id], onDelete: Cascade)
+}
