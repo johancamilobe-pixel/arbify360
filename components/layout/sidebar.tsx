@@ -39,6 +39,7 @@ function getNavItems(academyId: string, role: "ADMIN" | "REFEREE") {
     { label: "Asistencia",    href: `${base}/attendance`,    icon: ClipboardCheck,roles: ["ADMIN", "REFEREE"] },
     { label: "Árbitros",      href: `${base}/referees`,      icon: Users,         roles: ["ADMIN"] },
     { label: "Pagos",         href: `${base}/payments`,      icon: Wallet,        roles: ["ADMIN"] },
+    { label: "Mis pagos",     href: `${base}/my-payments`,   icon: Wallet,        roles: ["REFEREE"] },
     { label: "Reportes",      href: `${base}/reports`,       icon: BarChart3,     roles: ["ADMIN"] },
     { label: "Configuración", href: `${base}/settings`,      icon: Settings,      roles: ["ADMIN"] },
     { label: "Mi perfil",     href: `${base}/profile`,       icon: User,          roles: ["ADMIN", "REFEREE"] },
