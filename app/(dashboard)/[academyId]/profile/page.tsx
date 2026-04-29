@@ -1,8 +1,9 @@
 import { requireAcademyAccess, getDbUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { ProfileForm } from "./profile-form";
 import { ProfileInfoCard } from "./profile-info-card";
+import { RefereePagosCard } from "./referee-pagos-card";
 import { User } from "lucide-react";
 
 interface Props {
@@ -25,21 +26,70 @@ export default async function ProfilePage({ params }: Props) {
     include: { refereeCategory: true },
   });
 
-  // Estadísticas para árbitros
-  const assignments = context.role === "REFEREE"
-    ? await prisma.gameAssignment.findMany({
-        where: { userId: user.id, game: { academyId } },
-        include: {
-          game: {
-            include: {
-              scoresheet: {
-                include: { submissions: { where: { userId: user.id } } },
+  // Estadísticas y pagos — solo para árbitros
+  let assignments: any[] = [];
+  let pagosData: any = null;
+
+  if (context.role === "REFEREE") {
+    assignments = await prisma.gameAssignment.findMany({
+      where: { userId: user.id, game: { academyId } },
+      include: {
+        game: {
+          include: {
+            sport: true,
+            scoresheet: {
+              include: {
+                submissions: {
+                  where: { userId: user.id },
+                  include: {
+                    paymentItem: {
+                      include: { payment: true },
+                    },
+                  },
+                },
               },
             },
           },
         },
-      })
-    : [];
+      },
+      orderBy: { game: { startTime: "desc" } },
+    });
+
+    // Agrupar juegos por estado de pago
+    const juegosConSubmission = assignments
+      .map((a) => {
+        const sub = a.game.scoresheet?.submissions[0] ?? null;
+        const pagado = !!sub?.paymentItem;
+        return {
+          gameId:      a.game.id,
+          homeTeam:    a.game.homeTeam,
+          awayTeam:    a.game.awayTeam,
+          sport:       a.game.sport.name,
+          date:        formatDate(a.game.startTime),
+          subStatus:   sub?.status ?? null,
+          monto:       sub?.paymentAmount ? Number(sub.paymentAmount) : null,
+          pagado,
+          pagoFecha:   sub?.paymentItem?.payment?.paidAt
+            ? formatDate(sub.paymentItem.payment.paidAt)
+            : null,
+          pagoRecibo:  sub?.paymentItem?.payment?.receiptNumber ?? null,
+        };
+      });
+
+    const pagados   = juegosConSubmission.filter((j) => j.pagado);
+    const pendientes = juegosConSubmission.filter(
+      (j) => !j.pagado && j.subStatus === "APPROVED"
+    );
+    const totalPagado   = pagados.reduce((s, j) => s + (j.monto ?? 0), 0);
+    const totalPendiente = pendientes.reduce((s, j) => s + (j.monto ?? 0), 0);
+
+    pagosData = {
+      pagados:        pagados.map((j) => ({ ...j, monto: j.monto ? formatCurrency(j.monto) : "—" })),
+      pendientes:     pendientes.map((j) => ({ ...j, monto: j.monto ? formatCurrency(j.monto) : "—" })),
+      totalPagado:    formatCurrency(totalPagado),
+      totalPendiente: formatCurrency(totalPendiente),
+    };
+  }
 
   const totalGames = assignments.length;
   const totalEarned = assignments.reduce((sum, a) => {
@@ -79,6 +129,11 @@ export default async function ProfilePage({ params }: Props) {
 
       {/* Info card */}
       <ProfileInfoCard profile={profileInfo} />
+
+      {/* Sección de pagos — solo árbitros */}
+      {context.role === "REFEREE" && pagosData && (
+        <RefereePagosCard pagos={JSON.parse(JSON.stringify(pagosData))} />
+      )}
 
       {/* Formulario */}
       <ProfileForm
