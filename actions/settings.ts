@@ -199,3 +199,63 @@ export async function updateAcademy(
   revalidatePath(`/${academyId}/settings`);
   return { success: true };
 }
+
+// ─── Fases de Juego ───────────────────────────────────────────────────────────
+
+const PhaseSchema = z.object({
+  name: z.string().min(1, "El nombre es requerido").max(50),
+});
+
+export async function createGamePhase(
+  academyId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  await requireAdminRole(academyId);
+  const parsed = PhaseSchema.safeParse({ name: formData.get("name") });
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors.name?.[0] };
+
+  try {
+    await prisma.gamePhase.create({
+      data: { academyId, name: parsed.data.name.trim() },
+    });
+    revalidatePath(`/${academyId}/settings`);
+    return { success: true };
+  } catch {
+    return { success: false, error: "Ya existe una fase con ese nombre" };
+  }
+}
+
+export async function updateGamePhase(
+  academyId: string,
+  phaseId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  await requireAdminRole(academyId);
+  const parsed = PhaseSchema.safeParse({ name: formData.get("name") });
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors.name?.[0] };
+
+  try {
+    await prisma.gamePhase.update({
+      where: { id: phaseId },
+      data: { name: parsed.data.name.trim() },
+    });
+    revalidatePath(`/${academyId}/settings`);
+    return { success: true };
+  } catch {
+    return { success: false, error: "Ya existe una fase con ese nombre" };
+  }
+}
+
+export async function deleteGamePhase(
+  academyId: string,
+  phaseId: string
+): Promise<ActionResult> {
+  await requireAdminRole(academyId);
+  const inUse = await prisma.game.count({ where: { gamePhaseId: phaseId } });
+  if (inUse > 0) {
+    return { success: false, error: `Esta fase está usada en ${inUse} juego${inUse !== 1 ? "s" : ""}. No se puede eliminar.` };
+  }
+  await prisma.gamePhase.delete({ where: { id: phaseId } });
+  revalidatePath(`/${academyId}/settings`);
+  return { success: true };
+}

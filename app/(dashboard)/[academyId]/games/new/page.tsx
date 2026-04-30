@@ -12,13 +12,16 @@ export default async function NewGamePage({ params }: Props) {
   const { academyId } = params;
   await requireAdminRole(academyId);
 
-  // Datos necesarios para el formulario
-  const [sports, categories, referees] = await Promise.all([
+  const [sports, categories, phases, referees] = await Promise.all([
     prisma.academySport.findMany({
       where: { academyId },
       include: { sport: true },
     }),
     prisma.gameCategory.findMany({
+      where: { academyId },
+      orderBy: { name: "asc" },
+    }),
+    prisma.gamePhase.findMany({
       where: { academyId },
       orderBy: { name: "asc" },
     }),
@@ -45,6 +48,7 @@ export default async function NewGamePage({ params }: Props) {
         academyId={academyId}
         sports={sports.map((s) => ({ id: s.sport.id, name: s.sport.name }))}
         categories={categories}
+        phases={phases.map((p) => ({ id: p.id, name: p.name }))}
         referees={referees.map((m) => ({
           id: m.userId,
           name: m.user.name,

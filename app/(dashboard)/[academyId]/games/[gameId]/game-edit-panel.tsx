@@ -8,6 +8,7 @@ import { Edit2, Trash2, Loader2, AlertTriangle } from "lucide-react";
 
 interface Sport    { id: string; name: string }
 interface Category { id: string; name: string; incomePerGame?: any }
+interface Phase    { id: string; name: string }
 interface Referee  { id: string; name: string; category: string | null; licenseNumber: string | null }
 
 interface GameDefaults {
@@ -16,6 +17,7 @@ interface GameDefaults {
   venue:               string;
   sportId:             string;
   gameCategoryId:      string;
+  gamePhaseId?:        string;
   startTime:           string;
   endTime:             string;
   mainRefereeId?:      string;
@@ -28,6 +30,7 @@ interface Props {
   gameId:     string;
   sports:     Sport[];
   categories: Category[];
+  phases:     Phase[];
   referees:   Referee[];
   defaults:   GameDefaults;
 }
@@ -37,6 +40,7 @@ export function GameEditPanel({
   gameId,
   sports,
   categories,
+  phases,
   referees,
   defaults,
 }: Props) {
@@ -63,7 +67,6 @@ export function GameEditPanel({
     <div className="bg-card rounded-xl border border-border p-5 space-y-4">
       <h2 className="font-semibold text-foreground">Gestión del juego</h2>
 
-      {/* Botones principales */}
       <div className="flex flex-wrap gap-3">
         <button
           onClick={() => { setShowEdit(!showEdit); setShowDeleteConfirm(false); }}
@@ -83,12 +86,10 @@ export function GameEditPanel({
         </button>
       </div>
 
-      {/* Error de eliminación */}
       {deleteError && (
         <p className="text-sm text-red-500">{deleteError}</p>
       )}
 
-      {/* Confirmación de eliminación */}
       {showDeleteConfirm && (
         <div className="border-t border-border/50 pt-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -127,7 +128,6 @@ export function GameEditPanel({
         </div>
       )}
 
-      {/* Formulario de edición expandible */}
       {showEdit && (
         <div className="border-t border-border/50 pt-4">
           <GameForm
@@ -136,6 +136,7 @@ export function GameEditPanel({
             mode="edit"
             sports={sports}
             categories={categories}
+            phases={phases}
             referees={referees}
             defaults={defaults}
           />

@@ -8,6 +8,7 @@ import { formatTime } from "@/lib/utils";
 
 interface Sport    { id: string; name: string }
 interface Category { id: string; name: string; incomePerGame?: any }
+interface Phase    { id: string; name: string }
 interface Referee  { id: string; name: string; category: string | null; licenseNumber: string | null }
 
 // Defaults para modo edición
@@ -17,6 +18,7 @@ interface GameDefaults {
   venue:               string;
   sportId:             string;
   gameCategoryId:      string;
+  gamePhaseId?:        string;
   startTime:           string; // "YYYY-MM-DDTHH:MM"
   endTime:             string;
   mainRefereeId?:      string;
@@ -28,6 +30,7 @@ interface Props {
   academyId:  string;
   sports:     Sport[];
   categories: Category[];
+  phases:     Phase[];
   referees:   Referee[];
   mode?:      "create" | "edit";
   gameId?:    string;
@@ -38,6 +41,7 @@ export function GameForm({
   academyId,
   sports,
   categories,
+  phases,
   referees,
   mode = "create",
   gameId,
@@ -178,6 +182,15 @@ export function GameForm({
             </select>
           </Field>
         </div>
+
+        <Field label="Fase del torneo">
+          <select name="gamePhaseId" className={inputClass} defaultValue={defaults?.gamePhaseId ?? ""}>
+            <option value="">Sin fase asignada</option>
+            {phases.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </Field>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Inicio" error={fieldErrors.startTime?.[0]}>

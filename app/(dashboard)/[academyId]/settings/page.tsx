@@ -2,9 +2,10 @@ import { requireAdminRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { RefereeCategoriesPanel } from "./referee-categories-panel";
 import { GameCategoriesPanel } from "./game-categories-panel";
+import { GamePhasesPanel } from "./game-phases-panel";
 import { SportsToggle } from "./sports-toggle";
 import { AcademyInfoPanel } from "./academy-info-panel";
-import { Settings, Users, Calendar, Dumbbell, Building2 } from "lucide-react";
+import { Settings, Users, Calendar, Dumbbell, Building2, Flag } from "lucide-react";
 
 interface Props {
   params: { academyId: string };
@@ -16,7 +17,7 @@ export default async function SettingsPage({ params }: Props) {
   const { academyId } = params;
   await requireAdminRole(academyId);
 
-  const [academy, refereeCategories, gameCategories, allSports, academySports] = await Promise.all([
+  const [academy, refereeCategories, gameCategories, gamePhases, allSports, academySports] = await Promise.all([
     prisma.academy.findUnique({ where: { id: academyId } }),
     prisma.refereeCategory.findMany({
       where: { academyId },
@@ -24,6 +25,11 @@ export default async function SettingsPage({ params }: Props) {
       include: { _count: { select: { memberships: true } } },
     }),
     prisma.gameCategory.findMany({
+      where: { academyId },
+      orderBy: { name: "asc" },
+      include: { _count: { select: { games: true } } },
+    }),
+    prisma.gamePhase.findMany({
       where: { academyId },
       orderBy: { name: "asc" },
       include: { _count: { select: { games: true } } },
@@ -54,6 +60,12 @@ export default async function SettingsPage({ params }: Props) {
     name:          c.name,
     incomePerGame: c.incomePerGame?.toString() ?? null,
     count:         c._count.games,
+  }));
+
+  const phases = gamePhases.map((p) => ({
+    id:    p.id,
+    name:  p.name,
+    count: p._count.games,
   }));
 
   return (
@@ -90,6 +102,15 @@ export default async function SettingsPage({ params }: Props) {
         description="Tipos de juego y su ingreso base: Juvenil, Élite, Sub-17, etc."
       >
         <GameCategoriesPanel academyId={academyId} categories={gameCats} />
+      </Section>
+
+      {/* Fases de juego */}
+      <Section
+        icon={<Flag className="w-4 h-4" />}
+        title="Fases de juego"
+        description="Etapas del torneo: Fase de grupos, Eliminatoria, Cuartos, Semifinal, Final, Amistoso, etc."
+      >
+        <GamePhasesPanel academyId={academyId} phases={phases} />
       </Section>
 
       {/* Deportes */}

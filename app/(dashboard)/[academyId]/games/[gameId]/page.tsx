@@ -10,7 +10,7 @@ import {
   formatCurrency,
   cn,
 } from "@/lib/utils";
-import { Calendar, MapPin, Users, Trophy } from "lucide-react";
+import { Calendar, MapPin, Users, Trophy, Flag } from "lucide-react";
 import { GameStatusActions } from "./game-status-actions";
 import { GameEditPanel } from "./game-edit-panel";
 import { RefereeReplaceButton } from "./referee-replace-button";
@@ -32,6 +32,7 @@ export default async function GameDetailPage({ params }: Props) {
     include: {
       sport: true,
       gameCategory: true,
+      gamePhase: true,
       assignments: {
         include: {
           user: true,
@@ -67,6 +68,10 @@ export default async function GameDetailPage({ params }: Props) {
     orderBy: { name: "asc" },
   });
   const categories = await prisma.gameCategory.findMany({
+    where: { academyId },
+    orderBy: { name: "asc" },
+  });
+  const phases = await prisma.gamePhase.findMany({
     where: { academyId },
     orderBy: { name: "asc" },
   });
@@ -122,6 +127,7 @@ export default async function GameDetailPage({ params }: Props) {
           </h1>
           <p className="text-brand-600 font-medium mt-1">
             {game.sport.name} · {game.gameCategory.name}
+            {game.gamePhase && ` · ${game.gamePhase.name}`}
           </p>
         </div>
         <span className={cn(
@@ -147,6 +153,12 @@ export default async function GameDetailPage({ params }: Props) {
         <InfoRow icon={<Trophy className="w-4 h-4" />} label="Categoría">
           {game.gameCategory.name}
         </InfoRow>
+
+        {game.gamePhase && (
+          <InfoRow icon={<Flag className="w-4 h-4" />} label="Fase">
+            {game.gamePhase.name}
+          </InfoRow>
+        )}
       </div>
 
       {/* Árbitros asignados */}
@@ -287,12 +299,14 @@ export default async function GameDetailPage({ params }: Props) {
             incomePerGame: c.incomePerGame,
           }))}
           referees={refereesForReplace}
+          phases={phases.map((p) => ({ id: p.id, name: p.name }))}
           defaults={{
             homeTeam:            game.homeTeam,
             awayTeam:            game.awayTeam,
             venue:               game.venue,
             sportId:             game.sportId,
             gameCategoryId:      game.gameCategoryId,
+            gamePhaseId:         game.gamePhaseId ?? undefined,
             startTime:           toDatetimeLocal(game.startTime),
             endTime:             toDatetimeLocal(game.endTime),
             mainRefereeId:       assignmentByRole["MAIN_REFEREE"],

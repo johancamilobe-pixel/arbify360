@@ -111,6 +111,7 @@ model Academy {
   gameCategories    GameCategory[]
   refereeCategories RefereeCategory[]
   games             Game[]
+  gamePhases        GamePhase[]
   payments          Payment[]
   incomes           Income[]
 }
@@ -199,6 +200,23 @@ model GameCategory {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// FASES DE JUEGO (configurables por academia)
+// Ej: Eliminatoria, Fase de grupos, Octavos, Cuartos, Semifinal, Final, Amistoso
+// ─────────────────────────────────────────────────────────────────────────────
+
+model GamePhase {
+  id        String   @id @default(cuid())
+  academyId String
+  name      String
+  createdAt DateTime @default(now())
+
+  academy Academy @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  games   Game[]
+
+  @@unique([academyId, name])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // JUEGOS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -207,6 +225,7 @@ model Game {
   academyId      String
   sportId        String
   gameCategoryId String
+  gamePhaseId    String?
   homeTeam       String
   awayTeam       String
   venue          String
@@ -220,6 +239,7 @@ model Game {
   academy      Academy          @relation(fields: [academyId], references: [id], onDelete: Cascade)
   sport        Sport            @relation(fields: [sportId], references: [id])
   gameCategory GameCategory     @relation(fields: [gameCategoryId], references: [id])
+  gamePhase    GamePhase?       @relation(fields: [gamePhaseId], references: [id])
   assignments  GameAssignment[]
   scoresheet   Scoresheet?
 }
