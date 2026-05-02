@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 interface Props {
   transactionId: string;
@@ -9,20 +8,16 @@ interface Props {
 }
 
 export function PaymentRefresh({ transactionId, academyId }: Props) {
-  const router = useRouter();
-
   useEffect(() => {
     if (!transactionId) return;
 
-    // Pequeño delay para que el servidor termine de procesar
+    // Esperar a que el servidor procese el pago y hacer hard reload
     const timer = setTimeout(() => {
-      // Limpiar el ?id= de la URL y hacer hard refresh
-      router.replace(`/${academyId}`);
-      router.refresh();
-    }, 1500);
+      window.location.href = `/${academyId}`;
+    }, 2000);
 
     return () => clearTimeout(timer);
-  }, [transactionId, academyId, router]);
+  }, [transactionId, academyId]);
 
   return null;
 }
