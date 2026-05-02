@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { MobileLayout } from "@/components/layout/mobile-layout";
+import { SubscriptionGate } from "@/components/layout/subscription-gate";
 import type { AcademyRole } from "@/lib/auth";
 
 interface Props {
@@ -31,28 +32,6 @@ export default async function AcademyLayout({ children, params }: Props) {
   const currentMembership = user.memberships.find((m) => m.academyId === academyId);
   if (!currentMembership) redirect("/select-academy");
 
-  // ─── Verificar suscripción ────────────────────────────────────────────────
-  const sub = await prisma.subscription.findUnique({
-    where: { academyId },
-    select: { status: true, trialEndsAt: true, subscriptionEndsAt: true },
-  });
-
-  if (sub) {
-    const now = new Date();
-    let hasAccess = false;
-
-    if (sub.status === "TRIAL") {
-      hasAccess = now <= sub.trialEndsAt;
-    } else if (sub.status === "ACTIVE") {
-      hasAccess = sub.subscriptionEndsAt ? now <= sub.subscriptionEndsAt : false;
-    }
-
-    if (!hasAccess) {
-      redirect(`/${academyId}/subscription`);
-    }
-  }
-  // ─────────────────────────────────────────────────────────────────────────
-
   const context = {
     academyId:   currentMembership.academyId,
     academyName: currentMembership.academy.name,
@@ -66,6 +45,25 @@ export default async function AcademyLayout({ children, params }: Props) {
     role:        m.role as AcademyRole,
   }));
 
+  // ─── Verificar suscripción ────────────────────────────────────────────────
+  const sub = await prisma.subscription.findUnique({
+    where: { academyId },
+    select: { status: true, trialEndsAt: true, subscriptionEndsAt: true },
+  });
+
+  let hasAccess = true;
+  if (sub) {
+    const now = new Date();
+    if (sub.status === "TRIAL") {
+      hasAccess = now <= sub.trialEndsAt;
+    } else if (sub.status === "ACTIVE") {
+      hasAccess = sub.subscriptionEndsAt ? now <= sub.subscriptionEndsAt : false;
+    } else {
+      hasAccess = false;
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   return (
     <MobileLayout
       academyId={context.academyId}
@@ -74,7 +72,17 @@ export default async function AcademyLayout({ children, params }: Props) {
       userName={user.name}
       userAcademies={userAcademies}
     >
-      {children}
+      {hasAccess ? (
+        children
+      ) : (
+        <SubscriptionGate
+          academyId={academyId}
+          academyName={context.academyName}
+          isAdmin={context.role === "ADMIN"}
+          wompiPublicKey={process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY!}
+          amount={1000000}
+        />
+      )}
     </MobileLayout>
   );
 }
