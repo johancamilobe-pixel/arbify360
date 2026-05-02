@@ -1,18 +1,57 @@
 import { requireAcademyAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatTime, GAME_STATUS_LABELS, getGameStatusColor, cn } from "@/lib/utils";
+import { activateSubscription } from "@/actions/subscription";
 
 interface Props {
   params: { academyId: string };
+  searchParams: { id?: string; env?: string };
 }
 
 export async function generateMetadata({ params }: Props) {
   return { title: "Inicio" };
 }
 
-export default async function DashboardPage({ params }: Props) {
+export default async function DashboardPage({ params, searchParams }: Props) {
   const { academyId } = params;
   const context = await requireAcademyAccess(academyId);
+
+  // ─── Verificar pago WOMPI si viene de redirección ─────────────────────────
+  const transactionId = searchParams.id;
+  if (transactionId) {
+    try {
+      const wompiApiUrl = `https://sandbox.wompi.co/v1/transactions/${transactionId}`;
+      const res = await fetch(wompiApiUrl, {
+        headers: {
+          Authorization: `Bearer ${process.env.WOMPI_PRIVATE_KEY}`,
+        },
+        cache: "no-store",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const tx = data.data;
+
+        if (tx?.status === "APPROVED") {
+          // Extraer academyId de la referencia: {academyId}-{timestamp}
+          const reference: string = tx.reference ?? "";
+          const parts = reference.split("-");
+          const lastPart = parts[parts.length - 1];
+          const isTimestamp = /^\d+$/.test(lastPart);
+          const refAcademyId = isTimestamp
+            ? parts.slice(0, -1).join("-")
+            : reference;
+
+          if (refAcademyId === academyId) {
+            await activateSubscription(academyId, tx.id);
+          }
+        }
+      }
+    } catch {
+      // Si falla la verificación, continuar normalmente
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   // Próximos juegos (máximo 5)
   const upcomingGames = await prisma.game.findMany({
@@ -70,21 +109,9 @@ export default async function DashboardPage({ params }: Props) {
       {/* Tarjetas de estadísticas — solo admin */}
       {context.role === "ADMIN" && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <StatCard
-            label="Juegos este mes"
-            value={monthlyGamesCount}
-            color="brand"
-          />
-          <StatCard
-            label="Planillas pendientes"
-            value={pendingScoreSheetsCount}
-            color={pendingScoreSheetsCount > 0 ? "yellow" : "green"}
-          />
-          <StatCard
-            label="Árbitros activos"
-            value={totalReferees}
-            color="gray"
-          />
+          <StatCard label="Juegos este mes"      value={monthlyGamesCount}        color="brand"  />
+          <StatCard label="Planillas pendientes" value={pendingScoreSheetsCount}  color={pendingScoreSheetsCount > 0 ? "yellow" : "green"} />
+          <StatCard label="Árbitros activos"     value={totalReferees}            color="gray"   />
         </div>
       )}
 
@@ -92,10 +119,7 @@ export default async function DashboardPage({ params }: Props) {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-foreground">Próximos juegos</h2>
-          <a
-            href={`/${academyId}/games`}
-            className="text-sm text-brand-600 hover:text-brand-700 font-medium"
-          >
+          <a href={`/${academyId}/games`} className="text-sm text-brand-600 hover:text-brand-700 font-medium">
             Ver todos →
           </a>
         </div>
@@ -114,11 +138,9 @@ export default async function DashboardPage({ params }: Props) {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    {/* Equipos */}
                     <p className="font-semibold text-foreground">
                       {game.homeTeam} <span className="text-muted-foreground/70 font-normal">vs</span> {game.awayTeam}
                     </p>
-                    {/* Detalles */}
                     <p className="text-sm text-muted-foreground mt-1">
                       {formatDate(game.startTime)} · {formatTime(game.startTime)} – {formatTime(game.endTime)}
                     </p>
@@ -126,7 +148,6 @@ export default async function DashboardPage({ params }: Props) {
                       {game.venue} · {game.sport.name} · {game.gameCategory.name}
                     </p>
                   </div>
-                  {/* Estado */}
                   <span className={cn(
                     "text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0",
                     getGameStatusColor(game.status)
@@ -135,13 +156,10 @@ export default async function DashboardPage({ params }: Props) {
                   </span>
                 </div>
 
-                {/* Árbitros asignados */}
                 {game.assignments.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-border/50 flex gap-4 flex-wrap">
                     {game.assignments.map((a) => (
-                      <span key={a.id} className="text-xs text-muted-foreground">
-                        {a.user.name}
-                      </span>
+                      <span key={a.id} className="text-xs text-muted-foreground">{a.user.name}</span>
                     ))}
                   </div>
                 )}
@@ -154,13 +172,7 @@ export default async function DashboardPage({ params }: Props) {
   );
 }
 
-// ─── Componente local de tarjeta estadística ──────────────────────────────────
-
-function StatCard({
-  label,
-  value,
-  color,
-}: {
+function StatCard({ label, value, color }: {
   label: string;
   value: number;
   color: "brand" | "green" | "yellow" | "gray";
