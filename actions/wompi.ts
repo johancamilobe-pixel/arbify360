@@ -18,7 +18,7 @@ export async function generateWompiUrl(academyId: string): Promise<string> {
   const signature = createHash("sha256").update(toSign).digest("hex");
 
   const url = [
-    `https://checkout.wompi.io/p/`,
+    `https://checkout.wompi.co/p/`,
     `?public-key=${publicKey}`,
     `&currency=${currency}`,
     `&amount-in-cents=${amount}`,
