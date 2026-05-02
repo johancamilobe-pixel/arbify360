@@ -19,10 +19,11 @@ export function SubscriptionGate({
   amount,
 }: Props) {
   const reference = `${academyId}-${Date.now()}`;
-  const redirectUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/${academyId}/subscription`;
+  const redirectUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/${academyId}`
+    : `/${academyId}`;
 
   useEffect(() => {
-    // Cargar script WOMPI si es admin
     if (!isAdmin) return;
     if (document.getElementById("wompi-script")) return;
     const script = document.createElement("script");
@@ -59,7 +60,7 @@ export function SubscriptionGate({
           </div>
         )}
 
-        {/* Panel de pago — admin */}
+        {/* Panel de pago — solo admin */}
         {isAdmin && (
           <div className="bg-card rounded-xl border border-border p-5 space-y-4">
             <div className="flex items-center gap-2">
@@ -67,19 +68,12 @@ export function SubscriptionGate({
               <h2 className="font-semibold text-foreground">Renovar suscripción</h2>
             </div>
 
-            <div className="flex items-center justify-between py-3 border-y border-border/50">
-              <div>
-                <p className="text-sm font-medium text-foreground">Plan mensual ArbiFy360</p>
-                <p className="text-xs text-muted-foreground mt-0.5">30 días de acceso completo</p>
-              </div>
-              <div className="text-right">
-                <p className="text-lg font-bold text-foreground">$10.000</p>
-                <p className="text-xs text-muted-foreground">COP</p>
-              </div>
+            <div className="py-3 border-y border-border/50">
+              <p className="text-sm font-medium text-foreground">Plan mensual ArbiFy360</p>
+              <p className="text-xs text-muted-foreground mt-0.5">30 días de acceso completo</p>
             </div>
 
             <div className="space-y-3">
-              {/* Botón WOMPI */}
               <form>
                 <script
                   src="https://checkout.wompi.io/widget.js"
