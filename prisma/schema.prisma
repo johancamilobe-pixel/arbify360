@@ -207,6 +207,22 @@ model GameCategory {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// FASES DE JUEGO (configurables por academia)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model GamePhase {
+  id        String   @id @default(cuid())
+  academyId String
+  name      String
+  createdAt DateTime @default(now())
+
+  academy Academy @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  games   Game[]
+
+  @@unique([academyId, name])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // JUEGOS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -215,6 +231,7 @@ model Game {
   academyId      String
   sportId        String
   gameCategoryId String
+  gamePhaseId    String?
   homeTeam       String
   awayTeam       String
   venue          String
@@ -228,6 +245,7 @@ model Game {
   academy      Academy          @relation(fields: [academyId], references: [id], onDelete: Cascade)
   sport        Sport            @relation(fields: [sportId], references: [id])
   gameCategory GameCategory     @relation(fields: [gameCategoryId], references: [id])
+  gamePhase    GamePhase?       @relation(fields: [gamePhaseId], references: [id])
   assignments  GameAssignment[]
   scoresheet   Scoresheet?
 }
@@ -393,7 +411,6 @@ model Income {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SUSCRIPCIÓN DE ACADEMIA
-// Controla acceso a la plataforma. Trial 8 días, luego pago mensual.
 // ─────────────────────────────────────────────────────────────────────────────
 
 model Subscription {
@@ -403,7 +420,7 @@ model Subscription {
   trialEndsAt         DateTime
   subscriptionEndsAt  DateTime?
   lastPaymentAt       DateTime?
-  lastPaymentRef      String?            // Referencia WOMPI del último pago
+  lastPaymentRef      String?
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
