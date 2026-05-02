@@ -1,7 +1,9 @@
 "use client";
 
-import { Shield, CheckCircle2, Clock, AlertTriangle, CreditCard, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { Shield, CheckCircle2, Clock, AlertTriangle, CreditCard, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { generateWompiUrl } from "@/actions/wompi";
 
 interface SubscriptionState {
   status: "TRIAL" | "ACTIVE" | "EXPIRED";
@@ -13,12 +15,10 @@ interface SubscriptionState {
 }
 
 interface Props {
-  academyId:      string;
-  academyName:    string;
-  isAdmin:        boolean;
-  subscription:   SubscriptionState | null;
-  wompiPublicKey: string;
-  amount:         number;
+  academyId:    string;
+  academyName:  string;
+  isAdmin:      boolean;
+  subscription: SubscriptionState | null;
 }
 
 const STATUS_CONFIG = {
@@ -27,36 +27,26 @@ const STATUS_CONFIG = {
   EXPIRED: { label: "Suscripción vencida",color: "bg-red-100 text-red-700",     icon: AlertTriangle },
 };
 
-export function SubscriptionView({
-  academyId,
-  academyName,
-  isAdmin,
-  subscription,
-  wompiPublicKey,
-  amount,
-}: Props) {
+export function SubscriptionView({ academyId, academyName, isAdmin, subscription }: Props) {
+  const [loading, setLoading] = useState(false);
+
   const status = subscription?.status ?? "EXPIRED";
   const config = STATUS_CONFIG[status];
   const StatusIcon = config.icon;
 
-  const reference = `${academyId}-${Date.now()}`;
-  const redirectUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/${academyId}`
-    : `https://arbify360-sandbox.vercel.app/${academyId}`;
-
-  const wompiUrl = [
-    `https://checkout.wompi.io/p/`,
-    `?public-key=${wompiPublicKey}`,
-    `&currency=COP`,
-    `&amount-in-cents=${amount}`,
-    `&reference=${reference}`,
-    `&redirect-url=${encodeURIComponent(redirectUrl)}`,
-  ].join("");
+  async function handlePay() {
+    setLoading(true);
+    try {
+      const url = await generateWompiUrl(academyId);
+      window.location.href = url;
+    } catch {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
 
-      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-brand-100 rounded-xl flex items-center justify-center">
           <Shield className="w-5 h-5 text-brand-600" />
@@ -71,10 +61,7 @@ export function SubscriptionView({
       <div className="bg-card rounded-xl border border-border p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-foreground">Estado actual</h2>
-          <span className={cn(
-            "flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full",
-            config.color
-          )}>
+          <span className={cn("flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full", config.color)}>
             <StatusIcon className="w-3.5 h-3.5" />
             {config.label}
           </span>
@@ -130,9 +117,7 @@ export function SubscriptionView({
         {status === "EXPIRED" && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-sm text-red-700 font-medium">Tu suscripción ha vencido</p>
-            <p className="text-sm text-red-600 mt-1">
-              Realiza el pago para reactivar el acceso completo.
-            </p>
+            <p className="text-sm text-red-600 mt-1">Realiza el pago para reactivar el acceso.</p>
           </div>
         )}
       </div>
@@ -143,9 +128,7 @@ export function SubscriptionView({
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-foreground">ArbiFy360 — Acceso completo</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Gestión de árbitros, juegos, planillas, pagos y reportes
-            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">Gestión de árbitros, juegos, planillas, pagos y reportes</p>
           </div>
           <div className="text-right">
             <p className="text-xl font-bold text-foreground">$10.000</p>
@@ -164,9 +147,7 @@ export function SubscriptionView({
               <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-green-700">Pago realizado</p>
-                <p className="text-xs text-green-600 mt-0.5">
-                  El botón se habilitará cuando sea necesario renovar.
-                </p>
+                <p className="text-xs text-green-600 mt-0.5">El botón se habilitará cuando sea necesario renovar.</p>
               </div>
             </div>
           ) : (
@@ -174,14 +155,16 @@ export function SubscriptionView({
               <p className="text-sm text-muted-foreground">
                 Al hacer clic serás redirigido al checkout seguro de WOMPI.
               </p>
-              <a
-                href={wompiUrl}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors"
+              <button
+                onClick={handlePay}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-70"
               >
-                <CreditCard className="w-4 h-4" />
-                Pagar suscripción
-                <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-              </a>
+                {loading
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Redirigiendo...</>
+                  : <><CreditCard className="w-4 h-4" /> Pagar suscripción</>
+                }
+              </button>
               <div className="flex items-center gap-2 text-xs text-muted-foreground/70">
                 <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                 Pago seguro procesado por WOMPI

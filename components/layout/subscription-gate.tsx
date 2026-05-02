@@ -1,35 +1,27 @@
 "use client";
 
-import { Shield, AlertTriangle, CheckCircle2, CreditCard, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { Shield, AlertTriangle, CheckCircle2, CreditCard, Loader2 } from "lucide-react";
+import { generateWompiUrl } from "@/actions/wompi";
 
 interface Props {
-  academyId:      string;
-  academyName:    string;
-  isAdmin:        boolean;
-  wompiPublicKey: string;
-  amount:         number;
+  academyId:   string;
+  academyName: string;
+  isAdmin:     boolean;
 }
 
-export function SubscriptionGate({
-  academyId,
-  academyName,
-  isAdmin,
-  wompiPublicKey,
-  amount,
-}: Props) {
-  const reference = `${academyId}-${Date.now()}`;
-  const redirectUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/${academyId}`
-    : `https://arbify360-sandbox.vercel.app/${academyId}`;
+export function SubscriptionGate({ academyId, academyName, isAdmin }: Props) {
+  const [loading, setLoading] = useState(false);
 
-  const wompiUrl = [
-    `https://checkout.wompi.io/p/`,
-    `?public-key=${wompiPublicKey}`,
-    `&currency=COP`,
-    `&amount-in-cents=${amount}`,
-    `&reference=${reference}`,
-    `&redirect-url=${encodeURIComponent(redirectUrl)}`,
-  ].join("");
+  async function handlePay() {
+    setLoading(true);
+    try {
+      const url = await generateWompiUrl(academyId);
+      window.location.href = url;
+    } catch {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-6">
@@ -69,14 +61,16 @@ export function SubscriptionGate({
             </div>
 
             <div className="space-y-3">
-              <a
-                href={wompiUrl}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors"
+              <button
+                onClick={handlePay}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-70"
               >
-                <CreditCard className="w-4 h-4" />
-                Pagar suscripción
-                <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-              </a>
+                {loading
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Redirigiendo...</>
+                  : <><CreditCard className="w-4 h-4" /> Pagar suscripción</>
+                }
+              </button>
 
               <div className="flex items-center gap-2 text-xs text-muted-foreground/70">
                 <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />

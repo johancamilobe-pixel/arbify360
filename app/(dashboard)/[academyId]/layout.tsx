@@ -79,8 +79,6 @@ export default async function AcademyLayout({ children, params }: Props) {
           academyId={academyId}
           academyName={context.academyName}
           isAdmin={context.role === "ADMIN"}
-          wompiPublicKey={process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY!}
-          amount={1000000}
         />
       )}
     </MobileLayout>

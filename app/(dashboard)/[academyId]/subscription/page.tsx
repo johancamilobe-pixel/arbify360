@@ -24,8 +24,6 @@ export default async function SubscriptionPage({ params }: Props) {
       academyName={academy?.name ?? ""}
       isAdmin={context.role === "ADMIN"}
       subscription={sub ? JSON.parse(JSON.stringify(sub)) : null}
-      wompiPublicKey={process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY!}
-      amount={1000000}
     />
   );
 }
