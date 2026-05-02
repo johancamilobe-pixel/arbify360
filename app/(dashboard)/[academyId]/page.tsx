@@ -2,6 +2,7 @@ import { requireAcademyAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatTime, GAME_STATUS_LABELS, getGameStatusColor, cn } from "@/lib/utils";
 import { activateSubscription } from "@/actions/subscription";
+import { PaymentRefresh } from "./payment-refresh";
 
 interface Props {
   params: { academyId: string };
@@ -96,6 +97,10 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
+      {/* Auto-refresh tras pago WOMPI */}
+      {transactionId && (
+        <PaymentRefresh transactionId={transactionId} academyId={academyId} />
+      )}
       {/* Bienvenida */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground">
