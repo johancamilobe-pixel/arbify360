@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Shield, AlertTriangle, CheckCircle2, CreditCard } from "lucide-react";
 
 interface Props {
@@ -18,26 +18,37 @@ export function SubscriptionGate({
   wompiPublicKey,
   amount,
 }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const reference = `${academyId}-${Date.now()}`;
   const redirectUrl = typeof window !== "undefined"
     ? `${window.location.origin}/${academyId}`
     : `/${academyId}`;
 
   useEffect(() => {
-    if (!isAdmin) return;
-    if (document.getElementById("wompi-script")) return;
+    if (!isAdmin || !containerRef.current) return;
+
+    // Limpiar contenedor por si hay renders previos
+    containerRef.current.innerHTML = "";
+
+    const form = document.createElement("form");
+
     const script = document.createElement("script");
-    script.id = "wompi-script";
     script.src = "https://checkout.wompi.io/widget.js";
-    script.setAttribute("data-render", "false");
-    document.body.appendChild(script);
-  }, [isAdmin]);
+    script.setAttribute("data-render", "button");
+    script.setAttribute("data-public-key", wompiPublicKey);
+    script.setAttribute("data-currency", "COP");
+    script.setAttribute("data-amount-in-cents", amount.toString());
+    script.setAttribute("data-reference", reference);
+    script.setAttribute("data-redirect-url", redirectUrl);
+
+    form.appendChild(script);
+    containerRef.current.appendChild(form);
+  }, [isAdmin, wompiPublicKey, amount, reference, redirectUrl]);
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-6">
       <div className="max-w-md w-full space-y-6">
 
-        {/* Ícono */}
         <div className="text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertTriangle className="w-8 h-8 text-red-500" />
@@ -48,7 +59,6 @@ export function SubscriptionGate({
           </p>
         </div>
 
-        {/* Mensaje árbitro */}
         {!isAdmin && (
           <div className="bg-muted rounded-xl p-5 text-center space-y-2">
             <p className="text-sm text-muted-foreground">
@@ -60,7 +70,6 @@ export function SubscriptionGate({
           </div>
         )}
 
-        {/* Panel de pago — solo admin */}
         {isAdmin && (
           <div className="bg-card rounded-xl border border-border p-5 space-y-4">
             <div className="flex items-center gap-2">
@@ -74,17 +83,8 @@ export function SubscriptionGate({
             </div>
 
             <div className="space-y-3">
-              <form>
-                <script
-                  src="https://checkout.wompi.io/widget.js"
-                  data-render="button"
-                  data-public-key={wompiPublicKey}
-                  data-currency="COP"
-                  data-amount-in-cents={amount.toString()}
-                  data-reference={reference}
-                  data-redirect-url={redirectUrl}
-                />
-              </form>
+              {/* Contenedor donde WOMPI inyecta el botón */}
+              <div ref={containerRef} />
 
               <div className="flex items-center gap-2 text-xs text-muted-foreground/70">
                 <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />

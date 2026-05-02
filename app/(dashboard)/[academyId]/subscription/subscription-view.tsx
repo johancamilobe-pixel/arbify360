@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Shield, CheckCircle2, Clock, AlertTriangle, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,9 +23,9 @@ interface Props {
 }
 
 const STATUS_CONFIG = {
-  TRIAL:   { label: "Período de prueba", color: "bg-blue-100 text-blue-700",   icon: Clock         },
-  ACTIVE:  { label: "Suscripción activa", color: "bg-green-100 text-green-700", icon: CheckCircle2  },
-  EXPIRED: { label: "Suscripción vencida", color: "bg-red-100 text-red-700",   icon: AlertTriangle },
+  TRIAL:   { label: "Período de prueba",  color: "bg-blue-100 text-blue-700",   icon: Clock        },
+  ACTIVE:  { label: "Suscripción activa", color: "bg-green-100 text-green-700", icon: CheckCircle2 },
+  EXPIRED: { label: "Suscripción vencida",color: "bg-red-100 text-red-700",     icon: AlertTriangle},
 };
 
 export function SubscriptionView({
@@ -35,6 +36,7 @@ export function SubscriptionView({
   wompiPublicKey,
   amount,
 }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const status = subscription?.status ?? "EXPIRED";
   const config = STATUS_CONFIG[status];
   const StatusIcon = config.icon;
@@ -43,9 +45,27 @@ export function SubscriptionView({
     ? `${window.location.origin}/${academyId}`
     : `/${academyId}`;
 
+  useEffect(() => {
+    if (!isAdmin || !subscription?.canPay || !containerRef.current) return;
+
+    containerRef.current.innerHTML = "";
+
+    const form = document.createElement("form");
+    const script = document.createElement("script");
+    script.src = "https://checkout.wompi.io/widget.js";
+    script.setAttribute("data-render", "button");
+    script.setAttribute("data-public-key", wompiPublicKey);
+    script.setAttribute("data-currency", "COP");
+    script.setAttribute("data-amount-in-cents", amount.toString());
+    script.setAttribute("data-reference", reference);
+    script.setAttribute("data-redirect-url", redirectUrl);
+
+    form.appendChild(script);
+    containerRef.current.appendChild(form);
+  }, [isAdmin, subscription?.canPay, wompiPublicKey, amount, reference, redirectUrl]);
+
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-brand-100 rounded-xl flex items-center justify-center">
           <Shield className="w-5 h-5 text-brand-600" />
@@ -163,17 +183,7 @@ export function SubscriptionView({
               <p className="text-sm text-muted-foreground">
                 Al hacer clic se abrirá el checkout seguro de WOMPI.
               </p>
-              <form>
-                <script
-                  src="https://checkout.wompi.io/widget.js"
-                  data-render="button"
-                  data-public-key={wompiPublicKey}
-                  data-currency="COP"
-                  data-amount-in-cents={amount.toString()}
-                  data-reference={reference}
-                  data-redirect-url={redirectUrl}
-                />
-              </form>
+              <div ref={containerRef} />
               <div className="flex items-center gap-2 text-xs text-muted-foreground/70">
                 <CreditCard className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
                 Tarjetas, Nequi, PSE y Bancolombia
@@ -183,7 +193,6 @@ export function SubscriptionView({
         </div>
       )}
 
-      {/* Árbitro */}
       {!isAdmin && (
         <div className="bg-muted rounded-xl p-5 text-center">
           <p className="text-sm text-muted-foreground">
