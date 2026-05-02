@@ -12,6 +12,7 @@ import {
   Home,
   ClipboardCheck,
   Wallet,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AcademySwitcher } from "./academy-switcher";
@@ -43,6 +44,7 @@ function getNavItems(academyId: string, role: "ADMIN" | "REFEREE") {
     { label: "Reportes",      href: `${base}/reports`,       icon: BarChart3,     roles: ["ADMIN"] },
     { label: "Configuración", href: `${base}/settings`,      icon: Settings,      roles: ["ADMIN"] },
     { label: "Mi perfil",     href: `${base}/profile`,       icon: User,          roles: ["ADMIN", "REFEREE"] },
+    { label: "Suscripción",   href: `${base}/subscription`,  icon: Shield,        roles: ["ADMIN", "REFEREE"] },
   ];
   return all.filter((item) => item.roles.includes(role));
 }

@@ -64,6 +64,12 @@ enum IncomeSource {
   LEAGUE  // Liga
 }
 
+enum SubscriptionStatus {
+  TRIAL    // Período de prueba (8 días)
+  ACTIVE   // Suscripción activa (pagada)
+  EXPIRED  // Vencida
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // USUARIOS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -114,6 +120,7 @@ model Academy {
   gamePhases        GamePhase[]
   payments          Payment[]
   incomes           Income[]
+  subscription      Subscription?
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -200,23 +207,6 @@ model GameCategory {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FASES DE JUEGO (configurables por academia)
-// Ej: Eliminatoria, Fase de grupos, Octavos, Cuartos, Semifinal, Final, Amistoso
-// ─────────────────────────────────────────────────────────────────────────────
-
-model GamePhase {
-  id        String   @id @default(cuid())
-  academyId String
-  name      String
-  createdAt DateTime @default(now())
-
-  academy Academy @relation(fields: [academyId], references: [id], onDelete: Cascade)
-  games   Game[]
-
-  @@unique([academyId, name])
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // JUEGOS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -225,7 +215,6 @@ model Game {
   academyId      String
   sportId        String
   gameCategoryId String
-  gamePhaseId    String?
   homeTeam       String
   awayTeam       String
   venue          String
@@ -239,7 +228,6 @@ model Game {
   academy      Academy          @relation(fields: [academyId], references: [id], onDelete: Cascade)
   sport        Sport            @relation(fields: [sportId], references: [id])
   gameCategory GameCategory     @relation(fields: [gameCategoryId], references: [id])
-  gamePhase    GamePhase?       @relation(fields: [gamePhaseId], references: [id])
   assignments  GameAssignment[]
   scoresheet   Scoresheet?
 }
@@ -399,6 +387,25 @@ model Income {
   notes       String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+
+  academy Academy @relation(fields: [academyId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUSCRIPCIÓN DE ACADEMIA
+// Controla acceso a la plataforma. Trial 8 días, luego pago mensual.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Subscription {
+  id                  String             @id @default(cuid())
+  academyId           String             @unique
+  status              SubscriptionStatus @default(TRIAL)
+  trialEndsAt         DateTime
+  subscriptionEndsAt  DateTime?
+  lastPaymentAt       DateTime?
+  lastPaymentRef      String?            // Referencia WOMPI del último pago
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
   academy Academy @relation(fields: [academyId], references: [id], onDelete: Cascade)
 }
