@@ -4,12 +4,15 @@ import { redirect } from "next/navigation";
 import { MobileLayout } from "@/components/layout/mobile-layout";
 import type { AcademyRole } from "@/lib/auth";
 
+// Este layout NO verifica suscripción — solo autenticación y membresía
+// Se usa exclusivamente para la ruta /subscription
+
 interface Props {
   children: React.ReactNode;
   params: { academyId: string };
 }
 
-export default async function AcademyLayout({ children, params }: Props) {
+export default async function SubscriptionLayout({ children, params }: Props) {
   const { academyId } = params;
 
   const supabase = await createServerSupabaseClient();
@@ -30,28 +33,6 @@ export default async function AcademyLayout({ children, params }: Props) {
 
   const currentMembership = user.memberships.find((m) => m.academyId === academyId);
   if (!currentMembership) redirect("/select-academy");
-
-  // ─── Verificar suscripción ────────────────────────────────────────────────
-  const sub = await prisma.subscription.findUnique({
-    where: { academyId },
-    select: { status: true, trialEndsAt: true, subscriptionEndsAt: true },
-  });
-
-  if (sub) {
-    const now = new Date();
-    let hasAccess = false;
-
-    if (sub.status === "TRIAL") {
-      hasAccess = now <= sub.trialEndsAt;
-    } else if (sub.status === "ACTIVE") {
-      hasAccess = sub.subscriptionEndsAt ? now <= sub.subscriptionEndsAt : false;
-    }
-
-    if (!hasAccess) {
-      redirect(`/${academyId}/subscription`);
-    }
-  }
-  // ─────────────────────────────────────────────────────────────────────────
 
   const context = {
     academyId:   currentMembership.academyId,
