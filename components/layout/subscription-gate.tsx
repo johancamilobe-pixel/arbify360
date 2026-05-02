@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Shield, AlertTriangle, CheckCircle2, CreditCard } from "lucide-react";
+import { Shield, AlertTriangle, CheckCircle2, CreditCard, ExternalLink } from "lucide-react";
 
 interface Props {
   academyId:      string;
@@ -18,32 +17,19 @@ export function SubscriptionGate({
   wompiPublicKey,
   amount,
 }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const reference = `${academyId}-${Date.now()}`;
   const redirectUrl = typeof window !== "undefined"
     ? `${window.location.origin}/${academyId}`
-    : `/${academyId}`;
+    : `https://arbify360-sandbox.vercel.app/${academyId}`;
 
-  useEffect(() => {
-    if (!isAdmin || !containerRef.current) return;
-
-    // Limpiar contenedor por si hay renders previos
-    containerRef.current.innerHTML = "";
-
-    const form = document.createElement("form");
-
-    const script = document.createElement("script");
-    script.src = "https://checkout.wompi.io/widget.js";
-    script.setAttribute("data-render", "button");
-    script.setAttribute("data-public-key", wompiPublicKey);
-    script.setAttribute("data-currency", "COP");
-    script.setAttribute("data-amount-in-cents", amount.toString());
-    script.setAttribute("data-reference", reference);
-    script.setAttribute("data-redirect-url", redirectUrl);
-
-    form.appendChild(script);
-    containerRef.current.appendChild(form);
-  }, [isAdmin, wompiPublicKey, amount, reference, redirectUrl]);
+  const wompiUrl = [
+    `https://checkout.wompi.io/p/`,
+    `?public-key=${wompiPublicKey}`,
+    `&currency=COP`,
+    `&amount-in-cents=${amount}`,
+    `&reference=${reference}`,
+    `&redirect-url=${encodeURIComponent(redirectUrl)}`,
+  ].join("");
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-6">
@@ -83,8 +69,14 @@ export function SubscriptionGate({
             </div>
 
             <div className="space-y-3">
-              {/* Contenedor donde WOMPI inyecta el botón */}
-              <div ref={containerRef} />
+              <a
+                href={wompiUrl}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors"
+              >
+                <CreditCard className="w-4 h-4" />
+                Pagar suscripción
+                <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+              </a>
 
               <div className="flex items-center gap-2 text-xs text-muted-foreground/70">
                 <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
