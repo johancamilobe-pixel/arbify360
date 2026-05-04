@@ -65,9 +65,14 @@ enum IncomeSource {
 }
 
 enum SubscriptionStatus {
-  TRIAL    // Período de prueba (8 días)
-  ACTIVE   // Suscripción activa (pagada)
-  EXPIRED  // Vencida
+  TRIAL
+  ACTIVE
+  EXPIRED
+}
+
+enum AttendanceResponse {
+  ACCEPTED
+  REJECTED
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -206,10 +211,6 @@ model GameCategory {
   @@unique([academyId, name])
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FASES DE JUEGO (configurables por academia)
-// ─────────────────────────────────────────────────────────────────────────────
-
 model GamePhase {
   id        String   @id @default(cuid())
   academyId String
@@ -274,9 +275,12 @@ model GameAssignment {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model Attendance {
-  id               String   @id @default(cuid())
-  gameAssignmentId String   @unique
-  confirmedAt      DateTime @default(now())
+  id               String             @id @default(cuid())
+  gameAssignmentId String             @unique
+  response         AttendanceResponse @default(ACCEPTED)
+  comment          String?
+  confirmedAt      DateTime           @default(now())
+  checkedInAt      DateTime?
   latitude         Float?
   longitude        Float?
 
