@@ -14,6 +14,9 @@ import { Calendar, MapPin, Users, Trophy, Flag } from "lucide-react";
 import { GameStatusActions } from "./game-status-actions";
 import { GameEditPanel } from "./game-edit-panel";
 import { RefereeReplaceButton } from "./referee-replace-button";
+import { RefereeAttendancePanel } from "./referee-attendance-panel";
+import { AdminAttendancePanel } from "./admin-attendance-panel";
+import { getDbUser } from "@/lib/auth";
 
 interface Props {
   params: { academyId: string; gameId: string };
@@ -26,6 +29,7 @@ export async function generateMetadata() {
 export default async function GameDetailPage({ params }: Props) {
   const { academyId, gameId } = params;
   const context = await requireAcademyAccess(academyId);
+  const currentUser = await getDbUser();
 
   const game = await prisma.game.findUnique({
     where: { id: gameId, academyId },
@@ -215,6 +219,49 @@ export default async function GameDetailPage({ params }: Props) {
           </div>
         )}
       </div>
+
+      {/* Panel asistencia árbitro — solo para el árbitro asignado */}
+      {context.role === "REFEREE" && currentUser && (() => {
+        const myAssignment = game.assignments.find((a) => a.userId === currentUser.id);
+        if (!myAssignment) return null;
+        return (
+          <RefereeAttendancePanel
+            academyId={academyId}
+            gameId={gameId}
+            response={myAssignment.attendance?.response ?? null}
+            comment={myAssignment.attendance?.comment ?? null}
+            checkedInAt={myAssignment.attendance?.checkedInAt?.toISOString() ?? null}
+            latitude={myAssignment.attendance?.latitude ?? null}
+            longitude={myAssignment.attendance?.longitude ?? null}
+            gameStartTime={game.startTime.toISOString()}
+          />
+        );
+      })()}
+
+      {/* Panel asistencia admin — muestra estado de todos los árbitros */}
+      {context.role === "ADMIN" && game.assignments.length > 0 && (
+        <div className="bg-card rounded-xl border border-border p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="w-4 h-4 text-muted-foreground" />
+            <h2 className="font-semibold text-foreground">Disponibilidad y llegadas</h2>
+          </div>
+          <AdminAttendancePanel
+            assignments={game.assignments.map((a) => ({
+              assignmentId: a.id,
+              userId:       a.userId,
+              userName:     a.user.name,
+              role:         a.role,
+              response:     a.attendance?.response ?? null,
+              comment:      a.attendance?.comment ?? null,
+              confirmedAt:  a.attendance?.confirmedAt?.toISOString() ?? null,
+              checkedInAt:  a.attendance?.checkedInAt?.toISOString() ?? null,
+              latitude:     a.attendance?.latitude ?? null,
+              longitude:    a.attendance?.longitude ?? null,
+            }))}
+            gameStartTime={game.startTime.toISOString()}
+          />
+        </div>
+      )}
 
       {/* Financiero — solo admin */}
       {context.role === "ADMIN" && game.incomeAmount && (

@@ -6,9 +6,70 @@ import { revalidatePath } from "next/cache";
 
 export type AttendanceResult = { success: boolean; error?: string };
 
-// ─── Confirmar asistencia (árbitro) ──────────────────────────────────────────
+// ─── Responder disponibilidad (árbitro acepta o rechaza) ──────────────────────
 
-export async function confirmAttendance(
+export async function respondAttendance(
+  academyId: string,
+  gameId: string,
+  response: "ACCEPTED" | "REJECTED",
+  comment?: string
+): Promise<AttendanceResult> {
+  await requireAcademyAccess(academyId);
+  const user = await getDbUser();
+  if (!user) return { success: false, error: "Usuario no encontrado" };
+
+  // Comentario obligatorio si rechaza
+  if (response === "REJECTED" && (!comment || comment.trim().length === 0)) {
+    return { success: false, error: "Debes indicar el motivo por el que no puedes asistir" };
+  }
+
+  const assignment = await prisma.gameAssignment.findFirst({
+    where: { gameId, userId: user.id },
+    include: { game: true, attendance: true },
+  });
+
+  if (!assignment) {
+    return { success: false, error: "No estás asignado a este juego" };
+  }
+
+  if (!["SCHEDULED", "CONFIRMED"].includes(assignment.game.status)) {
+    return { success: false, error: "Este juego ya no permite confirmar disponibilidad" };
+  }
+
+  if (assignment.attendance) {
+    // Actualizar respuesta existente
+    await prisma.attendance.update({
+      where: { id: assignment.attendance.id },
+      data: {
+        response,
+        comment: comment?.trim() || null,
+        // Si cambia a REJECTED, limpiar check-in
+        ...(response === "REJECTED" ? {
+          checkedInAt: null,
+          latitude: null,
+          longitude: null,
+        } : {}),
+      },
+    });
+  } else {
+    // Crear nueva respuesta
+    await prisma.attendance.create({
+      data: {
+        gameAssignmentId: assignment.id,
+        response,
+        comment: comment?.trim() || null,
+      },
+    });
+  }
+
+  revalidatePath(`/${academyId}/games/${gameId}`);
+  revalidatePath(`/${academyId}/attendance`);
+  return { success: true };
+}
+
+// ─── Check-in GPS (árbitro registra llegada al juego) ────────────────────────
+
+export async function checkInAttendance(
   academyId: string,
   gameId: string,
   latitude?: number,
@@ -18,33 +79,25 @@ export async function confirmAttendance(
   const user = await getDbUser();
   if (!user) return { success: false, error: "Usuario no encontrado" };
 
-  // Verificar que el juego existe y tiene asignación para este árbitro
   const assignment = await prisma.gameAssignment.findFirst({
     where: { gameId, userId: user.id },
-    include: {
-      game: true,
-      attendance: true,
-    },
+    include: { game: true, attendance: true },
   });
 
   if (!assignment) {
     return { success: false, error: "No estás asignado a este juego" };
   }
 
-  if (assignment.attendance) {
-    return { success: false, error: "Ya confirmaste tu asistencia a este juego" };
+  if (!assignment.attendance || assignment.attendance.response !== "ACCEPTED") {
+    return { success: false, error: "Debes aceptar el juego antes de registrar tu llegada" };
   }
 
-  // Solo permite confirmar en juegos SCHEDULED o CONFIRMED
-  if (!["SCHEDULED", "CONFIRMED"].includes(assignment.game.status)) {
-    return { success: false, error: "Este juego ya no permite confirmación de asistencia" };
-  }
-
-  await prisma.attendance.create({
+  await prisma.attendance.update({
+    where: { id: assignment.attendance.id },
     data: {
-      gameAssignmentId: assignment.id,
-      latitude:  latitude ?? null,
-      longitude: longitude ?? null,
+      checkedInAt: new Date(),
+      latitude:    latitude ?? null,
+      longitude:   longitude ?? null,
     },
   });
 
@@ -53,12 +106,23 @@ export async function confirmAttendance(
   return { success: true };
 }
 
+// ─── Confirmar asistencia (legacy — mantener compatibilidad) ──────────────────
+
+export async function confirmAttendance(
+  academyId: string,
+  gameId: string,
+  latitude?: number,
+  longitude?: number
+): Promise<AttendanceResult> {
+  return respondAttendance(academyId, gameId, "ACCEPTED");
+}
+
 // ─── Cancelar confirmación (árbitro o admin) ─────────────────────────────────
 
 export async function cancelAttendance(
   academyId: string,
   gameId: string,
-  userId?: string // admin puede cancelar la de otro
+  userId?: string
 ): Promise<AttendanceResult> {
   const context = await requireAcademyAccess(academyId);
   const currentUser = await getDbUser();
@@ -72,7 +136,7 @@ export async function cancelAttendance(
   });
 
   if (!assignment || !assignment.attendance) {
-    return { success: false, error: "No hay confirmación de asistencia para cancelar" };
+    return { success: false, error: "No hay respuesta de asistencia para cancelar" };
   }
 
   await prisma.attendance.delete({
@@ -84,7 +148,7 @@ export async function cancelAttendance(
   return { success: true };
 }
 
-// ─── Obtener juegos pendientes de confirmar (árbitro) ────────────────────────
+// ─── Obtener juegos pendientes de responder (árbitro) ────────────────────────
 
 export async function getMyPendingAttendance(academyId: string) {
   await requireAcademyAccess(academyId);
@@ -101,12 +165,7 @@ export async function getMyPendingAttendance(academyId: string) {
       attendance: null,
     },
     include: {
-      game: {
-        include: {
-          sport: true,
-          gameCategory: true,
-        },
-      },
+      game: { include: { sport: true, gameCategory: true } },
     },
     orderBy: { game: { startTime: "asc" } },
   });
@@ -121,10 +180,7 @@ export async function getGameAttendance(academyId: string, gameId: string) {
 
   const assignments = await prisma.gameAssignment.findMany({
     where: { gameId },
-    include: {
-      user: true,
-      attendance: true,
-    },
+    include: { user: true, attendance: true },
   });
 
   return assignments.map((a) => ({
@@ -133,8 +189,10 @@ export async function getGameAttendance(academyId: string, gameId: string) {
     userName:     a.user.name,
     userPhoto:    a.user.photoUrl,
     role:         a.role,
-    confirmed:    !!a.attendance,
+    response:     a.attendance?.response ?? null,
+    comment:      a.attendance?.comment ?? null,
     confirmedAt:  a.attendance?.confirmedAt ?? null,
+    checkedInAt:  a.attendance?.checkedInAt ?? null,
     latitude:     a.attendance?.latitude ?? null,
     longitude:    a.attendance?.longitude ?? null,
   }));
