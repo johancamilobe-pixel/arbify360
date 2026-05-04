@@ -8,6 +8,7 @@ import { formatCurrency, getInitials } from "@/lib/utils";
 interface Referee {
   userId:       string;
   name:         string;
+  email:        string;
   photoUrl:     string | null;
   phone:        string | null;
   licenseNumber: string | null;
@@ -29,6 +30,7 @@ export function RefereeSearch({ academyId, referees }: Props) {
     if (!q) return referees;
     return referees.filter((r) =>
       r.name.toLowerCase().includes(q) ||
+      r.email.toLowerCase().includes(q) ||
       r.licenseNumber?.toLowerCase().includes(q) ||
       r.phone?.includes(q)
     );
@@ -43,7 +45,7 @@ export function RefereeSearch({ academyId, referees }: Props) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar por nombre, licencia o teléfono..."
+          placeholder="Buscar por nombre, email, licencia o teléfono..."
           className="w-full pl-9 pr-9 py-2.5 text-sm border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent bg-card"
         />
         {query && (

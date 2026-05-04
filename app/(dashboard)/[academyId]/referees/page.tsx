@@ -35,6 +35,7 @@ export default async function RefereesPage({ params, searchParams }: Props) {
   const referees = memberships.map((m) => ({
     userId:        m.userId,
     name:          m.user.name,
+    email:         m.user.email,
     photoUrl:      m.user.photoUrl ?? null,
     phone:         m.user.phone ?? null,
     licenseNumber: m.user.licenseNumber ?? null,
