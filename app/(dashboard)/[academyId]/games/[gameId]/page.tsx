@@ -97,6 +97,7 @@ export default async function GameDetailPage({ params }: Props) {
   const refereesForReplace = referees.map((m) => ({
     id: m.userId,
     name: m.user.name,
+    email: m.user.email,
     category: m.refereeCategory?.name ?? null,
     licenseNumber: m.user.licenseNumber ?? null,
   }));

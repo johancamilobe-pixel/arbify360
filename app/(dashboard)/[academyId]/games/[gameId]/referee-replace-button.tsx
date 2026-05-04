@@ -8,6 +8,7 @@ import { RefreshCw, Loader2, AlertTriangle, X, Check } from "lucide-react";
 interface Referee {
   id: string;
   name: string;
+  email?: string;
   category: string | null;
   licenseNumber: string | null;
 }

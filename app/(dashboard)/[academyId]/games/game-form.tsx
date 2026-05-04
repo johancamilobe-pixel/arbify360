@@ -3,13 +3,13 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createGame, updateGame } from "@/actions/games";
-import { AlertTriangle, Loader2, CheckCircle2 } from "lucide-react";
-import { formatTime } from "@/lib/utils";
+import { AlertTriangle, Loader2, CheckCircle2, Search, X, ChevronDown } from "lucide-react";
+import { formatTime, cn } from "@/lib/utils";
 
 interface Sport    { id: string; name: string }
 interface Category { id: string; name: string; incomePerGame?: any }
 interface Phase    { id: string; name: string }
-interface Referee  { id: string; name: string; category: string | null; licenseNumber: string | null }
+interface Referee  { id: string; name: string; email?: string; category: string | null; licenseNumber: string | null }
 
 // Defaults para modo edición
 interface GameDefaults {
@@ -315,27 +315,128 @@ function RefereeSelect({
 }: {
   name: string;
   label: string;
-  referees: { id: string; name: string; category: string | null; licenseNumber: string | null }[];
+  referees: { id: string; name: string; email?: string; category: string | null; licenseNumber: string | null }[];
   defaultValue?: string;
   onChange?: () => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState(defaultValue ?? "");
+
+  const selected = referees.find((r) => r.id === selectedId);
+
+  const filtered = query.trim()
+    ? referees.filter((r) =>
+        r.name.toLowerCase().includes(query.toLowerCase()) ||
+        r.email?.toLowerCase().includes(query.toLowerCase()) ||
+        r.licenseNumber?.toLowerCase().includes(query.toLowerCase())
+      )
+    : referees;
+
+  function handleSelect(id: string) {
+    setSelectedId(id);
+    setQuery("");
+    setOpen(false);
+    onChange?.();
+  }
+
+  function handleClear() {
+    setSelectedId("");
+    setQuery("");
+    setOpen(false);
+    onChange?.();
+  }
+
   return (
     <Field label={label}>
-      <select
-        name={name}
-        className={inputClass}
-        defaultValue={defaultValue ?? ""}
-        onChange={onChange}
-      >
-        <option value="">Sin asignar</option>
-        {referees.map((r) => (
-          <option key={r.id} value={r.id}>
-            {r.name}
-            {r.category ? ` · ${r.category}` : ""}
-            {r.licenseNumber ? ` (${r.licenseNumber})` : ""}
-          </option>
-        ))}
-      </select>
+      {/* Hidden input para el form */}
+      <input type="hidden" name={name} value={selectedId} />
+
+      <div className="relative">
+        {/* Input de búsqueda / árbitro seleccionado */}
+        <div
+          className={cn(
+            "w-full px-3 py-2 text-sm border border-border rounded-lg bg-card flex items-center gap-2 cursor-pointer",
+            open && "ring-2 ring-brand-400 border-transparent"
+          )}
+          onClick={() => { setOpen(!open); setQuery(""); }}
+        >
+          {selected ? (
+            <>
+              <span className="flex-1 truncate text-foreground">{selected.name}</span>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); handleClear(); }}
+                className="text-muted-foreground/70 hover:text-foreground flex-shrink-0"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </>
+          ) : (
+            <>
+              <Search className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
+              <span className="text-muted-foreground/60 flex-1">Sin asignar</span>
+              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
+            </>
+          )}
+        </div>
+
+        {/* Dropdown */}
+        {open && (
+          <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden">
+            {/* Input búsqueda */}
+            <div className="p-2 border-b border-border/50">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                <input
+                  autoFocus
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar por nombre o email..."
+                  className="w-full pl-8 pr-3 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-brand-400"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            </div>
+
+            {/* Opciones */}
+            <div className="max-h-48 overflow-y-auto">
+              {/* Opción vacía */}
+              <button
+                type="button"
+                onClick={() => handleClear()}
+                className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:bg-muted transition-colors"
+              >
+                Sin asignar
+              </button>
+
+              {filtered.length === 0 ? (
+                <p className="px-3 py-2 text-sm text-muted-foreground/70">Sin resultados</p>
+              ) : (
+                filtered.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => handleSelect(r.id)}
+                    className={cn(
+                      "w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors",
+                      r.id === selectedId && "bg-brand-50 text-brand-700"
+                    )}
+                  >
+                    <p className="font-medium truncate">{r.name}</p>
+                    <p className="text-xs text-muted-foreground/70 truncate">
+                      {r.email && <span>{r.email}</span>}
+                      {r.category && <span> · {r.category}</span>}
+                      {r.licenseNumber && <span> · {r.licenseNumber}</span>}
+                    </p>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </Field>
   );
 }
