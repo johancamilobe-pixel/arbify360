@@ -383,18 +383,18 @@ function RefereeSelect({
 
         {/* Dropdown */}
         {open && (
-          <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden">
+          <div className="absolute z-50 w-full mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-lg shadow-xl overflow-hidden">
             {/* Input búsqueda */}
-            <div className="p-2 border-b border-border/50">
+            <div className="p-2 border-b border-zinc-200 dark:border-zinc-600">
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
                 <input
                   autoFocus
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Buscar por nombre o email..."
-                  className="w-full pl-8 pr-3 py-1.5 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-brand-400"
+                  className="w-full pl-8 pr-3 py-1.5 text-sm bg-zinc-50 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-500 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-400 placeholder:text-zinc-400"
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
@@ -406,13 +406,13 @@ function RefereeSelect({
               <button
                 type="button"
                 onClick={() => handleClear()}
-                className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:bg-muted transition-colors"
+                className="w-full text-left px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
               >
                 Sin asignar
               </button>
 
               {filtered.length === 0 ? (
-                <p className="px-3 py-2 text-sm text-muted-foreground/70">Sin resultados</p>
+                <p className="px-3 py-2 text-sm text-zinc-400">Sin resultados</p>
               ) : (
                 filtered.map((r) => (
                   <button
@@ -420,12 +420,12 @@ function RefereeSelect({
                     type="button"
                     onClick={() => handleSelect(r.id)}
                     className={cn(
-                      "w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors",
-                      r.id === selectedId && "bg-brand-50 text-brand-700"
+                      "w-full text-left px-3 py-2.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors",
+                      r.id === selectedId && "bg-brand-50 dark:bg-brand-900/30"
                     )}
                   >
-                    <p className="font-medium truncate">{r.name}</p>
-                    <p className="text-xs text-muted-foreground/70 truncate">
+                    <p className="font-medium text-zinc-900 dark:text-zinc-100 truncate">{r.name}</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
                       {r.email && <span>{r.email}</span>}
                       {r.category && <span> · {r.category}</span>}
                       {r.licenseNumber && <span> · {r.licenseNumber}</span>}
