@@ -189,10 +189,26 @@ export default async function GameDetailPage({ params }: Props) {
                 className="py-3 border-b border-border/50 last:border-0"
               >
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-foreground">{assignment.user.name}</p>
-                    <p className="text-sm text-muted-foreground">{GAME_ROLE_LABELS[assignment.role]}</p>
-                  </div>
+                  <div className="flex items-center gap-3">
+                    {/* Foto del árbitro */}
+                      <div className="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {assignment.user.photoUrl ? (
+                           <img
+                            src={assignment.user.photoUrl}
+                            alt={assignment.user.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-brand-600 font-bold text-xs">
+                            {assignment.user.name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{assignment.user.name}</p>
+                        <p className="text-sm text-muted-foreground">{GAME_ROLE_LABELS[assignment.role]}</p>
+                      </div>
+                    </div>
                   <div className="flex items-center gap-2">
                     {assignment.attendance ? (
                       <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
