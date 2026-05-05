@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition, useRef } from "react";
-import Image from "next/image";
 import { createBrowserClient } from "@supabase/ssr";
 import { updateAcademy, updateAcademyLogo } from "@/actions/settings";
 import { Loader2, Pencil, Check, X, Upload, Trash2 } from "lucide-react";
@@ -177,12 +176,10 @@ export function AcademyInfoPanel({ academyId, academyName, logoUrl }: Props) {
           {/* Preview */}
           <div className="relative w-16 h-16 rounded-xl border-2 border-dashed border-border bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
             {currentLogo ? (
-              <Image
+              <img
                 src={currentLogo}
                 alt="Logo academia"
-                fill
-                className="object-contain p-1"
-                unoptimized
+                className="w-full h-full object-contain p-1"
               />
             ) : (
               <span className="text-2xl font-bold text-brand-600">

@@ -8,6 +8,7 @@ import { Header } from "./header";
 interface Props {
   academyId:    string;
   academyName:  string;
+  academyLogo:  string | null;
   role:         "ADMIN" | "REFEREE";
   userName:     string;
   userAcademies: {
@@ -19,7 +20,7 @@ interface Props {
   children: React.ReactNode;
 }
 
-export function MobileLayout({ academyId, academyName, role, userName, userAcademies, children }: Props) {
+export function MobileLayout({ academyId, academyName, academyLogo, role, userName, userAcademies, children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
 
@@ -43,6 +44,7 @@ export function MobileLayout({ academyId, academyName, role, userName, userAcade
         <Sidebar
           academyId={academyId}
           academyName={academyName}
+          academyLogo={academyLogo}
           role={role}
           userName={userName}
           userAcademies={userAcademies}
@@ -60,6 +62,7 @@ export function MobileLayout({ academyId, academyName, role, userName, userAcade
             <Sidebar
               academyId={academyId}
               academyName={academyName}
+              academyLogo={academyLogo}
               role={role}
               userName={userName}
               userAcademies={userAcademies}

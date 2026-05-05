@@ -21,6 +21,7 @@ import { AcademySwitcher } from "./academy-switcher";
 interface SidebarProps {
   academyId: string;
   academyName: string;
+  academyLogo:  string | null;
   role: "ADMIN" | "REFEREE";
   userName: string;
   userAcademies: {
@@ -51,7 +52,7 @@ function getNavItems(academyId: string, role: "ADMIN" | "REFEREE") {
   return all.filter((item) => item.roles.includes(role));
 }
 
-export function Sidebar({ academyId, academyName, role, userName, userAcademies }: SidebarProps) {
+export function Sidebar({ academyId, academyName, academyLogo, role, userName, userAcademies }: SidebarProps) {
   const pathname = usePathname();
   const navItems = getNavItems(academyId, role);
 
@@ -79,6 +80,26 @@ export function Sidebar({ academyId, academyName, role, userName, userAcademies 
       </div>
 
       {/* Academia activa + switcher */}
+      <div className="px-4 pt-4 pb-2">
+        {academyLogo ? (
+          <img
+            src={academyLogo}
+            alt={academyName}
+            className="h-10 max-w-full object-contain mb-2 rounded-lg"
+          />
+        ) : null}
+      </div>
+
+      {academyLogo && (
+        <div className="px-4 pt-3 pb-1">
+          <img
+            src={academyLogo}
+            alt={academyName}
+            className="h-10 max-w-full object-contain rounded-lg"
+          />
+        </div>
+      )}
+
       <AcademySwitcher
         currentAcademyId={academyId}
         currentAcademyName={academyName}

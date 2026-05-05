@@ -35,6 +35,7 @@ export default async function AcademyLayout({ children, params }: Props) {
   const context = {
     academyId:   currentMembership.academyId,
     academyName: currentMembership.academy.name,
+    academyLogo: currentMembership.academy.logoUrl ?? null,
     role:        currentMembership.role as AcademyRole,
   };
 
@@ -68,6 +69,7 @@ export default async function AcademyLayout({ children, params }: Props) {
     <MobileLayout
       academyId={context.academyId}
       academyName={context.academyName}
+      academyLogo={context.academyLogo}
       role={context.role}
       userName={user.name}
       userAcademies={userAcademies}
