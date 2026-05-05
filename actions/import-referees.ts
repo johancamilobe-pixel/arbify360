@@ -66,7 +66,7 @@ export async function importReferees(
       if (!user) {
         // 1. Enviar invitación por email via Supabase Auth
         const supabaseAdmin = createAdminSupabaseClient();
-        const { data: authData } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+        const { data: authData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
           data.email,
           {
             data: {
@@ -76,6 +76,7 @@ export async function importReferees(
             redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/sign-in`,
           }
         );
+console.log("invite result:", { userId: authData?.user?.id, error: inviteError?.message });
 
         // 2. Crear en BD con supabaseId si se obtuvo
         user = await prisma.user.create({
@@ -93,6 +94,7 @@ export async function importReferees(
             licenseNumber:  data.licenseNumber  || null,
           },
         });
+        console.log("created user supabaseId:", user.supabaseId);
 }
 else {
         status = "updated";
