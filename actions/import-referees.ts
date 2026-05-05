@@ -1,5 +1,5 @@
 "use server";
-
+import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import { prisma } from "@/lib/prisma";
 import { requireAdminRole } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
@@ -64,8 +64,23 @@ export async function importReferees(
       let status: "created" | "updated" = "created";
 
       if (!user) {
+        // 1. Enviar invitación por email via Supabase Auth
+        const supabaseAdmin = createAdminSupabaseClient();
+        const { data: authData } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+          data.email,
+          {
+            data: {
+              first_name: data.firstName,
+              last_name:  data.lastName,
+            },
+            redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/sign-in`,
+          }
+        );
+
+        // 2. Crear en BD con supabaseId si se obtuvo
         user = await prisma.user.create({
           data: {
+            supabaseId:     authData?.user?.id ?? null,
             email:          data.email,
             name:           fullName,
             firstName:      data.firstName,
@@ -75,10 +90,11 @@ export async function importReferees(
             birthDate:      data.birthDate ? new Date(data.birthDate) : null,
             phone:          data.phone  || null,
             phone2:         data.phone2 || null,
-            licenseNumber:  data.licenseNumber || null,
+            licenseNumber:  data.licenseNumber  || null,
           },
         });
-      } else {
+}
+else {
         status = "updated";
         user = await prisma.user.update({
           where: { id: user.id },
