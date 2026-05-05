@@ -73,7 +73,7 @@ export async function importReferees(
               first_name: data.firstName,
               last_name:  data.lastName,
             },
-            redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/sign-in`,
+            redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm`,
           }
         );
 console.log("invite result:", { userId: authData?.user?.id, error: inviteError?.message });
