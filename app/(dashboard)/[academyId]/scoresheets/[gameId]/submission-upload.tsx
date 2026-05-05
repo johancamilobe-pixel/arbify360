@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { submitScoresheet, deleteMySubmission } from "@/actions/scoresheets";
 import { Upload, Loader2, X, ZoomIn, Trash2, Send } from "lucide-react";
@@ -20,7 +19,6 @@ export function SubmissionUpload({
   academyId, gameId, userId, role,
   isResubmit, submissionId, currentPhoto,
 }: Props) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError]           = useState<string | null>(null);
   const [preview, setPreview]       = useState<string | null>(null);
@@ -88,7 +86,7 @@ export function SubmissionUpload({
         );
 
         if (result.success) {
-          router.refresh();
+          window.location.reload();
         } else {
           setError(result.error ?? "Error al subir la planilla");
         }
@@ -99,22 +97,35 @@ export function SubmissionUpload({
     });
   }
 
-  async function handleDelete() {
-    if (!submissionId) return;
-    setDeleting(true);
-    try {
-      const result = await deleteMySubmission(academyId, submissionId);
-      if (result.success) {
-        router.refresh();
-      } else {
-        setError(result.error ?? "Error al eliminar");
-      }
-    } catch {
-      setError("Error al eliminar la planilla");
-    } finally {
-      setDeleting(false);
+async function handleDelete() {
+  if (!submissionId) return;
+  setDeleting(true);
+  try {
+    // Eliminar archivo de Supabase Storage
+    await supabase.storage
+      .from("SANDBOX")
+      .remove([
+        `${academyId}/scoresheets/${gameId}-${userId}.jpg`,
+        `${academyId}/scoresheets/${gameId}-${userId}.jpeg`,
+        `${academyId}/scoresheets/${gameId}-${userId}.png`,
+        `${academyId}/scoresheets/${gameId}-${userId}.webp`,
+        `${academyId}/scoresheets/${gameId}-${userId}.heic`,
+        `${academyId}/scoresheets/${gameId}-${userId}.heif`,
+      ]);
+
+    // Eliminar de la BD
+    const result = await deleteMySubmission(academyId, submissionId);
+    if (result.success) {
+      window.location.reload();
+    } else {
+      setError(result.error ?? "Error al eliminar");
     }
+  } catch {
+    setError("Error al eliminar la planilla");
+  } finally {
+    setDeleting(false);
   }
+}
 
   return (
     <div className="border-t border-border/50 pt-4 space-y-3">
@@ -148,14 +159,7 @@ export function SubmissionUpload({
 
           {/* Acciones sobre foto actual */}
           <div className="flex gap-2">
-            <button
-              onClick={() => inputRef.current?.click()}
-              disabled={isPending || deleting}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              Cambiar foto
-            </button>
+            
             {submissionId && (
               <button
                 onClick={handleDelete}
@@ -217,16 +221,7 @@ export function SubmissionUpload({
       )}
 
       {/* Input oculto para cambiar foto */}
-      {currentPhoto && (
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={handleFileChange}
-          className="hidden"
-        />
-      )}
+      
 
       {/* Comentario y botón enviar — solo cuando hay nueva foto seleccionada */}
       {preview && (
