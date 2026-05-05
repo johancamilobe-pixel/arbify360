@@ -22,22 +22,21 @@ export function AcademySwitcher({ currentAcademyId, currentAcademyName, academie
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  // Si solo tiene una academia, no hay nada que cambiar
-  if (academies.length <= 1) {
+ if (academies.length <= 1) {
   const current = academies[0];
   return (
     <div className="px-4 py-4 border-b border-white/10 space-y-3">
-      {current?.academyLogo && (
-        <img
-          src={current.academyLogo}
-          alt={currentAcademyName}
-          className="w-full h-20 object-contain rounded-xl"
-        />
-      )}
       <div>
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Academia</p>
         <p className="text-white font-medium text-sm truncate">{currentAcademyName}</p>
       </div>
+      {current?.academyLogo && (
+        <img
+          src={current.academyLogo}
+          alt={currentAcademyName}
+          className="w-full h-32 object-contain rounded-xl"
+        />
+      )}
     </div>
   );
 }
