@@ -2,14 +2,15 @@
 
 import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { createBrowserClient } from "@supabase/ssr";
 import { submitScoresheet } from "@/actions/scoresheets";
-import { Upload, Loader2, Image, X } from "lucide-react";
+import { Upload, Loader2, X } from "lucide-react";
 
 interface Props {
-  academyId: string;
-  gameId:    string;
-  userId:    string;
-  role:      string;
+  academyId:   string;
+  gameId:      string;
+  userId:      string;
+  role:        string;
   isResubmit?: boolean;
 }
 
@@ -18,26 +19,33 @@ export function SubmissionUpload({ academyId, gameId, userId, role, isResubmit }
   const [isPending, startTransition] = useTransition();
   const [error, setError]     = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [comment, setComment] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validar tamaño (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 10 * 1024 * 1024) {
       setError("La foto no puede pesar más de 10MB");
       return;
     }
 
-    // Validar tipo
     if (!file.type.startsWith("image/")) {
-      setError("Solo se permiten imágenes (JPG, PNG, etc.)");
+      setError("Solo se permiten imágenes (JPG, PNG, HEIC, etc.)");
       return;
     }
 
     setError(null);
+    setSelectedFile(file);
+
+    // Preview local
     const reader = new FileReader();
     reader.onload = () => setPreview(reader.result as string);
     reader.readAsDataURL(file);
@@ -45,11 +53,12 @@ export function SubmissionUpload({ academyId, gameId, userId, role, isResubmit }
 
   function clearPreview() {
     setPreview(null);
+    setSelectedFile(null);
     if (fileRef.current) fileRef.current.value = "";
   }
 
   async function handleSubmit() {
-    if (!preview) {
+    if (!selectedFile || !preview) {
       setError("Selecciona una foto de la planilla");
       return;
     }
@@ -57,21 +66,45 @@ export function SubmissionUpload({ academyId, gameId, userId, role, isResubmit }
     setError(null);
 
     startTransition(async () => {
-      // Por ahora usamos la URL base64 directamente.
-      // En producción se sube a Cloudinary y se guarda la URL retornada.
-      const result = await submitScoresheet(
-        academyId,
-        gameId,
-        userId,
-        role,
-        preview,
-        comment || undefined
-      );
+      try {
+        // 1. Subir a Supabase Storage
+        const ext  = selectedFile.name.split(".").pop() || "jpg";
+        const path = `${academyId}/scoresheets/${gameId}-${userId}.${ext}`;
 
-      if (result.success) {
-        router.refresh();
-      } else {
-        setError(result.error ?? "Error al subir la planilla");
+        const { error: uploadError } = await supabase.storage
+          .from("SANDBOX")
+          .upload(path, selectedFile, {
+            upsert:      true,
+            contentType: selectedFile.type,
+          });
+
+        if (uploadError) throw uploadError;
+
+        // 2. Obtener URL pública
+        const { data } = supabase.storage
+          .from("SANDBOX")
+          .getPublicUrl(path);
+
+        const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
+
+        // 3. Guardar URL en BD
+        const result = await submitScoresheet(
+          academyId,
+          gameId,
+          userId,
+          role,
+          publicUrl,
+          comment || undefined
+        );
+
+        if (result.success) {
+          router.refresh();
+        } else {
+          setError(result.error ?? "Error al subir la planilla");
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Error al subir la foto. Intenta de nuevo.");
       }
     });
   }
@@ -84,9 +117,7 @@ export function SubmissionUpload({ academyId, gameId, userId, role, isResubmit }
         </p>
       )}
 
-      {error && (
-        <p className="text-sm text-red-500">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-500">{error}</p>}
 
       {/* Preview */}
       {preview ? (
@@ -142,7 +173,7 @@ export function SubmissionUpload({ academyId, gameId, userId, role, isResubmit }
         {isPending ? (
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : (
-          <Image className="w-4 h-4" />
+          <Upload className="w-4 h-4" />
         )}
         {isPending ? "Subiendo..." : isResubmit ? "Reenviar planilla" : "Subir planilla"}
       </button>
