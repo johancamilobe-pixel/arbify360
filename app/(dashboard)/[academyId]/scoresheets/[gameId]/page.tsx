@@ -159,17 +159,17 @@ export default async function ScoresheetDetailPage({ params }: Props) {
               )}
 
               {/* Subir planilla — solo el árbitro asignado */}
-            {isCurrentUser && canUpload && (!submission || submission.status === "REJECTED") && (
-  <SubmissionUpload
-    academyId={academyId}
-    gameId={gameId}
-    userId={assignment.userId}
-    role={assignment.role}
-    isResubmit={submission?.status === "REJECTED"}
-    submissionId={submission?.id}
-    currentPhoto={submission?.photoUrl ?? undefined}
-  />
-)}
+            {isCurrentUser && canUpload && submission?.status !== "APPROVED" && (
+              <SubmissionUpload
+                academyId={academyId}
+                  gameId={gameId}
+                  userId={assignment.userId}
+                  role={assignment.role}
+                  isResubmit={submission?.status === "REJECTED"}
+                  submissionId={submission?.id}
+                  currentPhoto={submission?.photoUrl ?? undefined}
+                />
+              )}
 
               {/* Revisar — solo admin */}
               {isAdmin && submission && submission.status === "PENDING" && currentUser && (
