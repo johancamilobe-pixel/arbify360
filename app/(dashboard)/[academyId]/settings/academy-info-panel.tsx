@@ -71,7 +71,7 @@ export function AcademyInfoPanel({ academyId, academyName, logoUrl }: Props) {
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage
-        .from("academy-logos")
+        .from("SANDBOX")
         .getPublicUrl(path);
 
       // Cache-bust para forzar refresco de la imagen
