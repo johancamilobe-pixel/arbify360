@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminRole } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -69,43 +70,68 @@ export async function addReferee(
     return { success: false, fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const data = parsed.data;
+  const data     = parsed.data;
   const fullName = buildFullName(data.firstName, data.lastName);
 
+  // Verificar si ya existe en la BD
   let user = await prisma.user.findUnique({ where: { email: data.email } });
 
   if (!user) {
+    // 1. Crear usuario en Supabase Auth y enviar email de invitación
+    const supabaseAdmin = createAdminSupabaseClient();
+    const { data: authData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+      data.email,
+      {
+        data: {
+          first_name: data.firstName,
+          last_name:  data.lastName,
+        },
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/sign-in`,
+      }
+    );
+
+    if (inviteError) {
+      // Si el usuario ya existe en Auth pero no en la BD, continuar
+      if (!inviteError.message.includes("already been registered")) {
+        return { success: false, error: `Error al enviar invitación: ${inviteError.message}` };
+      }
+    }
+
+    // 2. Crear usuario en la BD con el supabaseId
     user = await prisma.user.create({
       data: {
+        supabaseId:     authData?.user?.id ?? null,
         email:          data.email,
         name:           fullName,
         firstName:      data.firstName,
         lastName:       data.lastName,
-        documentType:   data.documentType ?? null,
+        documentType:   data.documentType   ?? null,
         documentNumber: data.documentNumber ?? null,
         birthDate:      data.birthDate ? new Date(data.birthDate) : null,
-        phone:          data.phone ?? null,
+        phone:          data.phone  ?? null,
         phone2:         data.phone2 ?? null,
-        licenseNumber:  data.licenseNumber ?? null,
+        licenseNumber:  data.licenseNumber  ?? null,
       },
     });
   } else {
+    // Usuario ya existe — actualizar datos
     user = await prisma.user.update({
       where: { id: user.id },
       data: {
         name:           fullName,
         firstName:      data.firstName,
         lastName:       data.lastName,
-        documentType:   data.documentType ?? user.documentType,
+        documentType:   data.documentType   ?? user.documentType,
         documentNumber: data.documentNumber ?? user.documentNumber,
         birthDate:      data.birthDate ? new Date(data.birthDate) : user.birthDate,
-        phone:          data.phone ?? user.phone,
+        phone:          data.phone  ?? user.phone,
         phone2:         data.phone2 ?? user.phone2,
-        licenseNumber:  data.licenseNumber ?? user.licenseNumber,
+        licenseNumber:  data.licenseNumber  ?? user.licenseNumber,
       },
     });
   }
 
+  // Verificar si ya pertenece a la academia
   const existing = await prisma.academyMembership.findUnique({
     where: { userId_academyId: { userId: user.id, academyId } },
   });

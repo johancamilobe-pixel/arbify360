@@ -134,6 +134,11 @@ export function RefereeForm({ academyId, categories, mode, userId, defaults, onS
 
         <Field label="Email *" error={fieldErrors.email?.[0]}>
           <input name="email" type="email" placeholder="arbitro@email.com" defaultValue={defaults?.email} className={inputClass} />
+          {mode === "create" && (
+            <p className="text-xs text-brand-600 mt-1">
+              📧 Se enviará un email de invitación para que el árbitro defina su contraseña.
+            </p>
+          )}
         </Field>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
