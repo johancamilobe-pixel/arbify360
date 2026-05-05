@@ -9,6 +9,7 @@ import { formatTime, cn } from "@/lib/utils";
 interface Sport    { id: string; name: string }
 interface Category { id: string; name: string; incomePerGame?: any }
 interface Phase    { id: string; name: string }
+interface Tournament { id: string; name: string }
 interface Referee  { id: string; name: string; email?: string; category: string | null; licenseNumber: string | null }
 
 // Defaults para modo edición
@@ -19,6 +20,7 @@ interface GameDefaults {
   sportId:             string;
   gameCategoryId:      string;
   gamePhaseId?:        string;
+  tournamentId?:       string;
   startTime:           string; // "YYYY-MM-DDTHH:MM"
   endTime:             string;
   mainRefereeId?:      string;
@@ -27,14 +29,15 @@ interface GameDefaults {
 }
 
 interface Props {
-  academyId:  string;
-  sports:     Sport[];
-  categories: Category[];
-  phases:     Phase[];
-  referees:   Referee[];
-  mode?:      "create" | "edit";
-  gameId?:    string;
-  defaults?:  GameDefaults;
+  academyId:   string;
+  sports:      Sport[];
+  categories:  Category[];
+  phases:      Phase[];
+  tournaments: Tournament[];
+  referees:    Referee[];
+  mode?:       "create" | "edit";
+  gameId?:     string;
+  defaults?:   GameDefaults;
 }
 
 export function GameForm({
@@ -42,6 +45,7 @@ export function GameForm({
   sports,
   categories,
   phases,
+  tournaments,
   referees,
   mode = "create",
   gameId,
@@ -188,6 +192,15 @@ export function GameForm({
             <option value="">Sin fase asignada</option>
             {phases.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Torneo">
+          <select name="tournamentId" className={inputClass} defaultValue={defaults?.tournamentId ?? ""}>
+            <option value="">Sin torneo</option>
+            {tournaments.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
             ))}
           </select>
         </Field>

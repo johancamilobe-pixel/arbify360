@@ -3,16 +3,17 @@ import { prisma } from "@/lib/prisma";
 import { GameForm } from "../game-form";
 
 interface Props {
-  params: { academyId: string };
+  params:       { academyId: string };
+  searchParams: { tournamentId?: string };
 }
 
 export const metadata = { title: "Nuevo juego" };
 
-export default async function NewGamePage({ params }: Props) {
+export default async function NewGamePage({ params, searchParams }: Props) {
   const { academyId } = params;
   await requireAdminRole(academyId);
 
-  const [sports, categories, phases, referees] = await Promise.all([
+  const [sports, categories, phases, tournaments, referees] = await Promise.all([
     prisma.academySport.findMany({
       where: { academyId },
       include: { sport: true },
@@ -25,12 +26,13 @@ export default async function NewGamePage({ params }: Props) {
       where: { academyId },
       orderBy: { name: "asc" },
     }),
+    prisma.tournament.findMany({
+      where: { academyId, status: "ACTIVE" },
+      orderBy: { name: "asc" },
+    }),
     prisma.academyMembership.findMany({
       where: { academyId, role: "REFEREE", isActive: true },
-      include: {
-        user: true,
-        refereeCategory: true,
-      },
+      include: { user: true, refereeCategory: true },
       orderBy: { user: { name: "asc" } },
     }),
   ]);
@@ -49,13 +51,20 @@ export default async function NewGamePage({ params }: Props) {
         sports={sports.map((s) => ({ id: s.sport.id, name: s.sport.name }))}
         categories={categories}
         phases={phases.map((p) => ({ id: p.id, name: p.name }))}
+        tournaments={tournaments.map((t) => ({ id: t.id, name: t.name }))}
         referees={referees.map((m) => ({
-          id: m.userId,
-          name: m.user.name,
-          email: m.user.email,
-          category: m.refereeCategory?.name ?? null,
+          id:            m.userId,
+          name:          m.user.name,
+          email:         m.user.email,
+          category:      m.refereeCategory?.name ?? null,
           licenseNumber: m.user.licenseNumber ?? null,
         }))}
+        defaults={searchParams.tournamentId ? {
+          homeTeam: "", awayTeam: "", venue: "",
+          sportId: "", gameCategoryId: "",
+          startTime: "", endTime: "",
+          tournamentId: searchParams.tournamentId,
+        } : undefined}
       />
     </div>
   );

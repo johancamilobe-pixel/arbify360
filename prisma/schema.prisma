@@ -75,6 +75,11 @@ enum AttendanceResponse {
   REJECTED
 }
 
+enum TournamentStatus {
+  ACTIVE
+  FINISHED
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // USUARIOS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -123,6 +128,7 @@ model Academy {
   refereeCategories RefereeCategory[]
   games             Game[]
   gamePhases        GamePhase[]
+  tournaments       Tournament[]
   payments          Payment[]
   incomes           Income[]
   subscription      Subscription?
@@ -224,6 +230,25 @@ model GamePhase {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TORNEOS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Tournament {
+  id          String           @id @default(cuid())
+  academyId   String
+  name        String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      TournamentStatus @default(ACTIVE)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  academy Academy @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  games   Game[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // JUEGOS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -233,6 +258,7 @@ model Game {
   sportId        String
   gameCategoryId String
   gamePhaseId    String?
+  tournamentId   String?
   homeTeam       String
   awayTeam       String
   venue          String
@@ -247,6 +273,7 @@ model Game {
   sport        Sport            @relation(fields: [sportId], references: [id])
   gameCategory GameCategory     @relation(fields: [gameCategoryId], references: [id])
   gamePhase    GamePhase?       @relation(fields: [gamePhaseId], references: [id])
+  tournament   Tournament?      @relation(fields: [tournamentId], references: [id])
   assignments  GameAssignment[]
   scoresheet   Scoresheet?
 }

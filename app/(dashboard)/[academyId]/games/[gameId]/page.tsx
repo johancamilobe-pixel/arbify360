@@ -37,6 +37,7 @@ export default async function GameDetailPage({ params }: Props) {
       sport: true,
       gameCategory: true,
       gamePhase: true,
+      tournament: true,
       assignments: {
         include: {
           user: true,
@@ -76,6 +77,10 @@ export default async function GameDetailPage({ params }: Props) {
     orderBy: { name: "asc" },
   });
   const phases = await prisma.gamePhase.findMany({
+    where: { academyId },
+    orderBy: { name: "asc" },
+  });
+  const tournaments = await prisma.tournament.findMany({
     where: { academyId },
     orderBy: { name: "asc" },
   });
@@ -133,6 +138,7 @@ export default async function GameDetailPage({ params }: Props) {
           <p className="text-brand-600 font-medium mt-1">
             {game.sport.name} · {game.gameCategory.name}
             {game.gamePhase && ` · ${game.gamePhase.name}`}
+            {game.tournament && ` · ${game.tournament.name}`}
           </p>
         </div>
         <span className={cn(
@@ -348,6 +354,7 @@ export default async function GameDetailPage({ params }: Props) {
           }))}
           referees={refereesForReplace}
           phases={phases.map((p) => ({ id: p.id, name: p.name }))}
+          tournaments={tournaments.map((t) => ({ id: t.id, name: t.name }))}
           defaults={{
             homeTeam:            game.homeTeam,
             awayTeam:            game.awayTeam,
@@ -355,6 +362,7 @@ export default async function GameDetailPage({ params }: Props) {
             sportId:             game.sportId,
             gameCategoryId:      game.gameCategoryId,
             gamePhaseId:         game.gamePhaseId ?? undefined,
+            tournamentId:        game.tournamentId ?? undefined,
             startTime:           toDatetimeLocal(game.startTime),
             endTime:             toDatetimeLocal(game.endTime),
             mainRefereeId:       assignmentByRole["MAIN_REFEREE"],

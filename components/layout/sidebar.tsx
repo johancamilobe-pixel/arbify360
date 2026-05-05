@@ -13,6 +13,7 @@ import {
   ClipboardCheck,
   Wallet,
   Shield,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AcademySwitcher } from "./academy-switcher";
@@ -35,6 +36,7 @@ function getNavItems(academyId: string, role: "ADMIN" | "REFEREE") {
   const all = [
     { label: "Inicio",        href: base,                    icon: Home,          roles: ["ADMIN", "REFEREE"], exact: true },
     { label: "Juegos",        href: `${base}/games`,         icon: Calendar,      roles: ["ADMIN", "REFEREE"] },
+    { label: "Torneos",       href: `${base}/tournaments`,   icon: Trophy,        roles: ["ADMIN"] },
     { label: "Planillas",     href: `${base}/scoresheets`,   icon: ClipboardList, roles: ["ADMIN", "REFEREE"] },
     { label: "Disponibilidad",href: `${base}/availability`,  icon: Calendar,      roles: ["ADMIN", "REFEREE"] },
     { label: "Asistencia",    href: `${base}/attendance`,    icon: ClipboardCheck,roles: ["ADMIN", "REFEREE"] },

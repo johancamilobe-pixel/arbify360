@@ -9,7 +9,8 @@ import { Edit2, Trash2, Loader2, AlertTriangle } from "lucide-react";
 interface Sport    { id: string; name: string }
 interface Category { id: string; name: string; incomePerGame?: any }
 interface Phase    { id: string; name: string }
-interface Referee  { id: string; name: string; category: string | null; licenseNumber: string | null }
+interface Tournament { id: string; name: string }
+interface Referee  { id: string; name: string; email?: string; category: string | null; licenseNumber: string | null }
 
 interface GameDefaults {
   homeTeam:            string;
@@ -18,6 +19,7 @@ interface GameDefaults {
   sportId:             string;
   gameCategoryId:      string;
   gamePhaseId?:        string;
+  tournamentId?:       string;
   startTime:           string;
   endTime:             string;
   mainRefereeId?:      string;
@@ -26,13 +28,14 @@ interface GameDefaults {
 }
 
 interface Props {
-  academyId:  string;
-  gameId:     string;
-  sports:     Sport[];
-  categories: Category[];
-  phases:     Phase[];
-  referees:   Referee[];
-  defaults:   GameDefaults;
+  academyId:   string;
+  gameId:      string;
+  sports:      Sport[];
+  categories:  Category[];
+  phases:      Phase[];
+  tournaments: Tournament[];
+  referees:    Referee[];
+  defaults:    GameDefaults;
 }
 
 export function GameEditPanel({
@@ -41,6 +44,7 @@ export function GameEditPanel({
   sports,
   categories,
   phases,
+  tournaments,
   referees,
   defaults,
 }: Props) {
@@ -137,6 +141,7 @@ export function GameEditPanel({
             sports={sports}
             categories={categories}
             phases={phases}
+            tournaments={tournaments}
             referees={referees}
             defaults={defaults}
           />
