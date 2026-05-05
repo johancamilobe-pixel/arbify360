@@ -518,11 +518,46 @@ export async function deleteMultipleGames(
 
   if (gameIds.length === 0) return { success: false, error: "No hay juegos seleccionados" };
 
+  // Verificar que todos los juegos pertenecen a la academia
+  const games = await prisma.game.findMany({
+    where: { id: { in: gameIds }, academyId },
+    include: {
+      assignments: true,
+      scoresheet: {
+        include: { submissions: { include: { paymentItem: true } } }
+      }
+    }
+  });
+
+  // Eliminar en cascada manualmente
+  for (const game of games) {
+    if (game.scoresheet) {
+      // Eliminar PaymentItems vinculados a submissions
+      const submissionIds = game.scoresheet.submissions.map(s => s.id);
+      await prisma.paymentItem.deleteMany({
+        where: { scoresheetSubmissionId: { in: submissionIds } }
+      });
+      // Eliminar submissions
+      await prisma.scoresheetSubmission.deleteMany({
+        where: { scoresheetId: game.scoresheet.id }
+      });
+      // Eliminar scoresheet
+      await prisma.scoresheet.delete({ where: { id: game.scoresheet.id } });
+    }
+
+    // Eliminar attendance de cada assignment
+    const assignmentIds = game.assignments.map(a => a.id);
+    await prisma.attendance.deleteMany({
+      where: { gameAssignmentId: { in: assignmentIds } }
+    });
+
+    // Eliminar assignments
+    await prisma.gameAssignment.deleteMany({ where: { gameId: game.id } });
+  }
+
+  // Ahora sí eliminar los juegos
   await prisma.game.deleteMany({
-    where: {
-      id: { in: gameIds },
-      academyId,
-    },
+    where: { id: { in: gameIds }, academyId }
   });
 
   revalidatePath(`/${academyId}/games`);
