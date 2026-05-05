@@ -24,13 +24,23 @@ export function AcademySwitcher({ currentAcademyId, currentAcademyName, academie
 
   // Si solo tiene una academia, no hay nada que cambiar
   if (academies.length <= 1) {
-    return (
-      <div className="px-4 py-3 border-b border-white/10">
+  const current = academies[0];
+  return (
+    <div className="px-4 py-4 border-b border-white/10 space-y-3">
+      {current?.academyLogo && (
+        <img
+          src={current.academyLogo}
+          alt={currentAcademyName}
+          className="w-full h-20 object-contain rounded-xl"
+        />
+      )}
+      <div>
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Academia</p>
         <p className="text-white font-medium text-sm truncate">{currentAcademyName}</p>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   const handleSwitch = (academyId: string) => {
     setOpen(false);
@@ -39,6 +49,16 @@ export function AcademySwitcher({ currentAcademyId, currentAcademyName, academie
 
   return (
     <div className="relative border-b border-white/10">
+      {/* Logo grande de la academia actual */}
+    {academies.find(a => a.academyId === currentAcademyId)?.academyLogo && (
+      <div className="px-4 pt-4 pb-2">
+        <img
+          src={academies.find(a => a.academyId === currentAcademyId)!.academyLogo!}
+          alt={currentAcademyName}
+          className="w-full h-20 object-contain rounded-xl"
+        />
+      </div>
+      )}
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left"

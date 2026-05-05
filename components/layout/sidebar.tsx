@@ -90,16 +90,6 @@ export function Sidebar({ academyId, academyName, academyLogo, role, userName, u
         ) : null}
       </div>
 
-      {academyLogo && (
-        <div className="px-4 pt-3 pb-1">
-          <img
-            src={academyLogo}
-            alt={academyName}
-            className="h-10 max-w-full object-contain rounded-lg"
-          />
-        </div>
-      )}
-
       <AcademySwitcher
         currentAcademyId={academyId}
         currentAcademyName={academyName}
