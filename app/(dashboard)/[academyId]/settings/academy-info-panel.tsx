@@ -49,12 +49,12 @@ export function AcademyInfoPanel({ academyId, academyName, logoUrl }: Props) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("La imagen no puede superar 2MB");
+    if (file.size > 10 * 1024 * 1024) {
+  toast.error("La imagen no puede superar 10MB");
       return;
     }
 
-    const allowed = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/svg+xml", "image/heic", "image/heif"];
     if (!allowed.includes(file.type)) {
       toast.error("Formato no permitido. Usa JPG, PNG, WebP o SVG");
       return;
@@ -63,11 +63,11 @@ export function AcademyInfoPanel({ academyId, academyName, logoUrl }: Props) {
     setUploading(true);
     try {
       const ext  = file.name.split(".").pop();
-      const path = `${academyId}/logo.${ext}`;
+      const path = `${academyId}/logo/logo.${ext}`; 
 
       const { error: uploadError } = await supabase.storage
-        .from("academy-logos")
-        .upload(path, file, { upsert: true, contentType: file.type });
+        .from("SANDBOX")
+  .upload(path, file, { upsert: true, contentType: file.type });
 
       if (uploadError) throw uploadError;
 
@@ -97,7 +97,7 @@ export function AcademyInfoPanel({ academyId, academyName, logoUrl }: Props) {
     try {
       // Intentar eliminar todas las extensiones posibles
       await supabase.storage
-        .from("academy-logos")
+        .from("SANDBOX")
         .remove([
           `${academyId}/logo.jpg`,
           `${academyId}/logo.jpeg`,
@@ -223,7 +223,7 @@ export function AcademyInfoPanel({ academyId, academyName, logoUrl }: Props) {
             )}
 
             <p className="text-xs text-muted-foreground/60">
-              JPG, PNG, WebP o SVG · Máx. 2MB
+              JPG, PNG, WebP, SVG o HEIC · Máx. 10MB
             </p>
           </div>
         </div>
@@ -231,7 +231,7 @@ export function AcademyInfoPanel({ academyId, academyName, logoUrl }: Props) {
         <input
           ref={inputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/svg+xml"
+          accept="image/jpeg,image/png,image/webp,image/svg+xml,image/heic,image/heif"
           className="hidden"
           onChange={handleFileChange}
           disabled={uploading}
