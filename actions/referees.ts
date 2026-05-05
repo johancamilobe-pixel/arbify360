@@ -217,3 +217,25 @@ export async function reactivateReferee(academyId: string, userId: string): Prom
   revalidatePath(`/${academyId}/referees`);
   return { success: true };
 }
+
+// ─── Eliminar múltiples árbitros de la academia ───────────────────────────────
+
+export async function deleteMultipleReferees(
+  academyId: string,
+  userIds: string[]
+): Promise<RefereeFormState> {
+  await requireAdminRole(academyId);
+
+  if (userIds.length === 0) return { success: false, error: "No hay árbitros seleccionados" };
+
+  await prisma.academyMembership.deleteMany({
+    where: {
+      academyId,
+      userId: { in: userIds },
+      role: "REFEREE",
+    },
+  });
+
+  revalidatePath(`/${academyId}/referees`);
+  return { success: true };
+}

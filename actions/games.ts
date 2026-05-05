@@ -507,3 +507,24 @@ export async function deleteSubmission(
   revalidatePath(`/${academyId}/games/${gameId}`);
   return { success: true };
 }
+
+// ─── Eliminar múltiples juegos (admin) ────────────────────────────────────────
+
+export async function deleteMultipleGames(
+  academyId: string,
+  gameIds: string[]
+): Promise<GameFormState> {
+  await requireAdminRole(academyId);
+
+  if (gameIds.length === 0) return { success: false, error: "No hay juegos seleccionados" };
+
+  await prisma.game.deleteMany({
+    where: {
+      id: { in: gameIds },
+      academyId,
+    },
+  });
+
+  revalidatePath(`/${academyId}/games`);
+  return { success: true };
+}
