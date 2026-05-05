@@ -27,7 +27,7 @@ export function SubmissionUpload({ academyId, gameId, userId, role, isResubmit }
 
     // Validar tamaño (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      setError("La foto no puede pesar más de 5MB");
+      setError("La foto no puede pesar más de 10MB");
       return;
     }
 
@@ -107,7 +107,7 @@ export function SubmissionUpload({ academyId, gameId, userId, role, isResubmit }
         <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-brand-400 hover:bg-brand-50/30 transition-colors">
           <Upload className="w-6 h-6 text-muted-foreground/70 mb-2" />
           <span className="text-sm text-muted-foreground">Toca para subir foto de la planilla</span>
-          <span className="text-xs text-muted-foreground/70 mt-1">JPG, PNG — máx. 5MB</span>
+          <span className="text-xs text-muted-foreground/70 mt-1">JPG, PNG, HEIC — máx. 10MB</span>
           <input
             ref={fileRef}
             type="file"
