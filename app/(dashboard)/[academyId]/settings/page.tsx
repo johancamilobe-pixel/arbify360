@@ -83,7 +83,11 @@ export default async function SettingsPage({ params }: Props) {
 
       {/* Datos de la academia */}
       <Section icon={<Building2 className="w-4 h-4" />} title="Datos de la academia">
-        <AcademyInfoPanel academyId={academyId} academyName={academy.name} />
+        <AcademyInfoPanel
+  academyId={academyId}
+  academyName={academy.name}
+  logoUrl={academy.logoUrl ?? null}
+/>
       </Section>
 
       {/* Categorías de árbitros */}

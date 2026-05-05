@@ -259,3 +259,20 @@ export async function deleteGamePhase(
   revalidatePath(`/${academyId}/settings`);
   return { success: true };
 }
+
+// ─── Logo de la academia ──────────────────────────────────────────────────────
+
+export async function updateAcademyLogo(
+  academyId: string,
+  logoUrl: string
+): Promise<ActionResult> {
+  await requireAdminRole(academyId);
+
+  await prisma.academy.update({
+    where: { id: academyId },
+    data: { logoUrl: logoUrl || null },
+  });
+
+  revalidatePath(`/${academyId}/settings`);
+  return { success: true };
+}
