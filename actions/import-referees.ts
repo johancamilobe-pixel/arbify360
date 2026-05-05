@@ -66,7 +66,6 @@ export async function importReferees(
       if (!user) {
         user = await prisma.user.create({
           data: {
-            clerkId:        `pending_${Date.now()}_${data.email}`,
             email:          data.email,
             name:           fullName,
             firstName:      data.firstName,
