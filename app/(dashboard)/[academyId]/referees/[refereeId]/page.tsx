@@ -86,6 +86,8 @@ export default async function RefereeDetailPage({ params }: Props) {
 
   // Datos planos para el Client Component — sin íconos ni JSX
   const profileData = {
+    userId:         user.id,
+    academyId:      academyId,
     name:           user.name,
     photoUrl:       user.photoUrl ?? null,
     email:          user.email,

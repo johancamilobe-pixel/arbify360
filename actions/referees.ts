@@ -238,3 +238,21 @@ export async function deleteMultipleReferees(
   revalidatePath(`/${academyId}/referees`);
   return { success: true };
 }
+
+// ─── Actualizar foto del árbitro ──────────────────────────────────────────────
+
+export async function updateRefereePhoto(
+  academyId: string,
+  userId: string,
+  photoUrl: string
+): Promise<RefereeFormState> {
+  await requireAdminRole(academyId);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { photoUrl: photoUrl || null },
+  });
+
+  revalidatePath(`/${academyId}/referees/${userId}`);
+  return { success: true };
+}

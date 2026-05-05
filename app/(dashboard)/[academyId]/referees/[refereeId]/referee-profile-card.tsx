@@ -1,9 +1,11 @@
 "use client";
-
+import { RefereePhotoUpload } from "./referee-photo-upload";
 import { Phone, FileText, Mail, CreditCard, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ProfileData {
+  userId:         string;
+  academyId:      string;
   name:           string;
   photoUrl:       string | null;
   email:          string;
@@ -61,13 +63,12 @@ export function RefereeProfileCard({ profile, stats, history }: Props) {
       {/* Header */}
       <div className="bg-card rounded-xl border border-border p-5">
         <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {profile.photoUrl ? (
-              <img src={profile.photoUrl} alt={profile.name} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-brand-600 font-bold text-xl">{getInitials(profile.name)}</span>
-            )}
-          </div>
+          <RefereePhotoUpload
+            academyId={profile.academyId}
+            userId={profile.userId}
+            photoUrl={profile.photoUrl}
+            name={profile.name}
+          />
 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
