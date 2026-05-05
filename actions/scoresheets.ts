@@ -170,3 +170,35 @@ export async function rejectSubmission(
   revalidatePath(`/${academyId}/scoresheets`);
   return { success: true };
 }
+
+// ─── Eliminar mi propia submission (árbitro) ─────────────────────────────────
+
+export async function deleteMySubmission(
+  academyId: string,
+  submissionId: string
+): Promise<ScoresheetFormState> {
+  await requireAcademyAccess(academyId);
+
+  const submission = await prisma.scoresheetSubmission.findUnique({
+    where: { id: submissionId },
+    include: { scoresheet: { include: { game: true } } },
+  });
+
+  if (!submission || submission.scoresheet.game.academyId !== academyId) {
+    return { success: false, error: "Planilla no encontrada" };
+  }
+
+  // Solo se puede eliminar si está PENDING o REJECTED, no APPROVED
+  if (submission.status === "APPROVED") {
+    return { success: false, error: "No puedes eliminar una planilla ya aprobada" };
+  }
+
+  const gameId = submission.scoresheet.game.id;
+
+  await prisma.scoresheetSubmission.delete({ where: { id: submissionId } });
+
+  revalidatePath(`/${academyId}/scoresheets/${gameId}`);
+  revalidatePath(`/${academyId}/scoresheets`);
+  revalidatePath(`/${academyId}/games/${gameId}`);
+  return { success: true };
+}
