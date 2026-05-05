@@ -34,7 +34,7 @@ export function AcademySwitcher({ currentAcademyId, currentAcademyName, academie
         <img
           src={current.academyLogo}
           alt={currentAcademyName}
-          className="w-full h-32 object-contain rounded-xl"
+          className="w-full h-36 object-contain rounded-xl"
         />
       )}
     </div>
@@ -48,16 +48,6 @@ export function AcademySwitcher({ currentAcademyId, currentAcademyName, academie
 
   return (
     <div className="relative border-b border-white/10">
-      {/* Logo grande de la academia actual */}
-    {academies.find(a => a.academyId === currentAcademyId)?.academyLogo && (
-      <div className="px-4 pt-4 pb-2">
-        <img
-          src={academies.find(a => a.academyId === currentAcademyId)!.academyLogo!}
-          alt={currentAcademyName}
-          className="w-full h-20 object-contain rounded-xl"
-        />
-      </div>
-      )}
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left"
