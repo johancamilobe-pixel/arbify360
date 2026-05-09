@@ -69,6 +69,18 @@ export async function createAcademyWithAdmin(data: {
         },
       });
 
+      // Crear suscripción con 10 días de trial
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + 10);
+
+      await tx.subscription.create({
+        data: {
+          academyId: academy.id,
+          status: "TRIAL",
+          trialEndsAt,
+        },
+      });
+
       return { academy, user };
     });
 
