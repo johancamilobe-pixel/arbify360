@@ -122,7 +122,7 @@ export function ProfileForm({ academyId, defaults }: Props) {
           <div className="flex items-center h-[38px] px-3 bg-background border border-border rounded-lg">
             <span className="text-sm text-muted-foreground">{defaults.email}</span>
           </div>
-          <p className="text-xs text-muted-foreground/70 mt-0.5">El email se gestiona desde tu cuenta de Clerk</p>
+          <p className="text-xs text-muted-foreground/70 mt-0.5">El email no puede modificarse</p>
         </Field>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -161,4 +161,4 @@ function Field({ label, error, children }: { label: string; error?: string; chil
   );
 }
 
-const inputClass = "w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent bg-card";
+const inputClass = "w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent bg-background";
