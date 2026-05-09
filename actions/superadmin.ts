@@ -27,3 +27,24 @@ export async function toggleAcademyStatus(academyId: string, newStatus: boolean)
   revalidatePath("/superadmin/academias");
   return { success: true };
 }
+
+export async function updateSuperAdminProfile(data: {
+  firstName: string;
+  lastName:  string;
+  phone:     string;
+}) {
+  await requireSuperAdmin();
+
+  await prisma.user.update({
+    where: { email: SUPERADMIN_EMAIL },
+    data: {
+      firstName: data.firstName,
+      lastName:  data.lastName,
+      name:      `${data.firstName} ${data.lastName}`.trim(),
+      phone:     data.phone || null,
+    },
+  });
+
+  revalidatePath("/superadmin/perfil");
+  return { success: true };
+}
