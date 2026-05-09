@@ -33,7 +33,7 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="relative min-h-screen flex items-center justify-center bg-background isolate">
       <div className="bg-card border border-border rounded-xl p-8 w-full max-w-md space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">ArbiFy360</h1>
