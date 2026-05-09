@@ -18,18 +18,23 @@ export default async function RefereesPage({ params, searchParams }: Props) {
 
   const showInactive = searchParams.inactive === "1";
 
-  const memberships = await prisma.academyMembership.findMany({
-    where: {
-      academyId,
-      role: "REFEREE",
-      isActive: showInactive ? false : true,
-    },
-    include: {
-      user: true,
-      refereeCategory: true,
-    },
-    orderBy: { user: { name: "asc" } },
-  });
+  const [memberships, pendingRequestsCount] = await Promise.all([
+    prisma.academyMembership.findMany({
+      where: {
+        academyId,
+        role: "REFEREE",
+        isActive: showInactive ? false : true,
+      },
+      include: {
+        user: true,
+        refereeCategory: true,
+      },
+      orderBy: { user: { name: "asc" } },
+    }),
+    prisma.refereeRequest.count({
+      where: { academyId, status: "PENDING" },
+    }),
+  ]);
 
   // Serializar para el client component
   const referees = memberships.map((m) => ({
@@ -73,7 +78,7 @@ export default async function RefereesPage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      {/* Tabs activos/inactivos */}
+      {/* Tabs activos / inactivos / solicitudes */}
       <div className="flex gap-2 mb-6">
         <Link
           href={`/${academyId}/referees`}
@@ -96,6 +101,17 @@ export default async function RefereesPage({ params, searchParams }: Props) {
           )}
         >
           Inactivos
+        </Link>
+        <Link
+          href={`/${academyId}/referees/requests`}
+          className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-muted text-muted-foreground hover:bg-muted"
+        >
+          Solicitudes
+          {pendingRequestsCount > 0 && (
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-500 text-white text-xs font-bold">
+              {pendingRequestsCount}
+            </span>
+          )}
         </Link>
       </div>
 

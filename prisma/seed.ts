@@ -5,8 +5,6 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Iniciando seed...");
 
-  const MY_CLERK_ID = "user_3CrY2v59jgXfoEOk0vYx07YcuAD";
-
   const baloncesto = await prisma.sport.upsert({
     where: { name: "Baloncesto" },
     update: {},
@@ -49,13 +47,15 @@ async function main() {
     create: { academyId: academia.id, name: "Élite", incomePerGame: 195000 },
   });
 
+  // Admin — buscar por email, si no existe crear sin supabaseId por ahora
   const adminUser = await prisma.user.upsert({
-    where: { clerkId: MY_CLERK_ID },
+    where: { email: "johancamilobe@gmail.com" },
     update: {},
     create: {
-      clerkId: MY_CLERK_ID,
       email: "johancamilobe@gmail.com",
       name: "Admin Principal",
+      firstName: "Johan",
+      lastName: "Camilo",
     },
   });
 
@@ -65,16 +65,29 @@ async function main() {
     create: { userId: adminUser.id, academyId: academia.id, role: "ADMIN", isActive: true },
   });
 
+  // Árbitro de prueba
   const arbitro1 = await prisma.user.upsert({
-    where: { clerkId: "clerk-arbitro-prueba-001" },
+    where: { email: "arbitro1@prueba.com" },
     update: {},
-    create: { clerkId: "clerk-arbitro-prueba-001", email: "arbitro1@prueba.com", name: "Carlos Pérez", licenseNumber: "ARB-001" },
+    create: {
+      email: "arbitro1@prueba.com",
+      name: "Carlos Pérez",
+      firstName: "Carlos",
+      lastName: "Pérez",
+      licenseNumber: "ARB-001",
+    },
   });
 
   await prisma.academyMembership.upsert({
     where: { userId_academyId: { userId: arbitro1.id, academyId: academia.id } },
     update: {},
-    create: { userId: arbitro1.id, academyId: academia.id, role: "REFEREE", refereeCategoryId: categoriaJunior.id, ratePerGame: 35000, isActive: true },
+    create: {
+      userId: arbitro1.id,
+      academyId: academia.id,
+      role: "REFEREE",
+      refereeCategoryId: categoriaJunior.id,
+      isActive: true,
+    },
   });
 
   const manana = new Date();
