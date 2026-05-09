@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/utils";
 import { ProfileForm } from "./profile-form";
 import { ProfileInfoCard } from "./profile-info-card";
-import { User } from "lucide-react";
 
 interface Props {
   params: { academyId: string };
@@ -61,18 +60,19 @@ export default async function ProfilePage({ params }: Props) {
     totalGames,
     totalEarned:  formatCurrency(totalEarned),
     memberSince:  fullUser.createdAt.toLocaleDateString("es-CO", { month: "long", year: "numeric" }),
+    // Nuevos campos
+    firstName:    fullUser.firstName ?? "",
+    lastName:     fullUser.lastName ?? "",
+    photoUrl:     fullUser.photoUrl ?? null,
+    userId:       fullUser.id,
+    academyId,
   };
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-brand-100 rounded-xl flex items-center justify-center">
-          <User className="w-5 h-5 text-brand-600" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Mi perfil</h1>
-          <p className="text-sm text-muted-foreground">Revisa y actualiza tus datos personales</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Mi perfil</h1>
+        <p className="text-sm text-muted-foreground">Revisa y actualiza tus datos personales</p>
       </div>
 
       <ProfileInfoCard profile={profileInfo} />
