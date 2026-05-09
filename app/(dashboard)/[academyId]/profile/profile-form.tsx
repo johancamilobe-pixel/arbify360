@@ -161,4 +161,4 @@ function Field({ label, error, children }: { label: string; error?: string; chil
   );
 }
 
-const inputClass = "w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent bg-background";
+const inputClass = "w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent bg-background text-white placeholder:text-muted-foreground/50";
