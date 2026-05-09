@@ -21,6 +21,7 @@ const GameSchema = z.object({
   mainRefereeId:       z.string().optional(),
   secondaryRefereeId:  z.string().optional(),
   tableAssistantId:    z.string().optional(),
+  additionalRefereeId: z.string().optional(),
 });
 
 export type GameFormState = {
@@ -58,6 +59,7 @@ export async function createGame(
     mainRefereeId:       formData.get("mainRefereeId") || undefined,
     secondaryRefereeId:  formData.get("secondaryRefereeId") || undefined,
     tableAssistantId:    formData.get("tableAssistantId") || undefined,
+    additionalRefereeId: formData.get("additionalRefereeId") || undefined,
   };
 
   const parsed = GameSchema.safeParse(raw);
@@ -81,6 +83,7 @@ export async function createGame(
     data.mainRefereeId,
     data.secondaryRefereeId,
     data.tableAssistantId,
+    data.additionalRefereeId,
   ].filter(Boolean) as string[];
 
   if (assignedReferees.length > 0) {
@@ -130,6 +133,7 @@ export async function createGame(
     { userId: data.mainRefereeId,      role: "MAIN_REFEREE" },
     { userId: data.secondaryRefereeId, role: "SECONDARY_REFEREE" },
     { userId: data.tableAssistantId,   role: "TABLE_ASSISTANT" },
+    { userId: data.additionalRefereeId, role: "ADDITIONAL_REFEREE" },
   ].filter((a) => a.userId);
 
   if (assignments.length > 0) {
@@ -168,6 +172,7 @@ export async function updateGame(
     mainRefereeId:       formData.get("mainRefereeId") || undefined,
     secondaryRefereeId:  formData.get("secondaryRefereeId") || undefined,
     tableAssistantId:    formData.get("tableAssistantId") || undefined,
+    additionalRefereeId: formData.get("additionalRefereeId") || undefined,
   };
 
   const parsed = GameSchema.safeParse(raw);
@@ -194,6 +199,7 @@ export async function updateGame(
     data.mainRefereeId,
     data.secondaryRefereeId,
     data.tableAssistantId,
+    data.additionalRefereeId,
   ].filter(Boolean) as string[];
 
   if (assignedReferees.length > 0) {
@@ -293,6 +299,7 @@ export async function updateGame(
     { userId: data.mainRefereeId,      role: "MAIN_REFEREE" as const },
     { userId: data.secondaryRefereeId, role: "SECONDARY_REFEREE" as const },
     { userId: data.tableAssistantId,   role: "TABLE_ASSISTANT" as const },
+    { userId: data.additionalRefereeId, role: "ADDITIONAL_REFEREE" as const },
   ].filter((a) => a.userId && !approvedUserIds.has(a.userId!));
 
   if (newAssignments.length > 0) {

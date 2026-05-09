@@ -26,6 +26,7 @@ interface GameDefaults {
   mainRefereeId?:      string;
   secondaryRefereeId?: string;
   tableAssistantId?:   string;
+  additionalRefereeId?: string;
 }
 
 interface Props {
@@ -59,7 +60,7 @@ export function GameForm({
 
   // Track si hay al menos un árbitro seleccionado para mostrar aviso de auto-confirmación
   const [hasReferee, setHasReferee] = useState(
-    !!(defaults?.mainRefereeId || defaults?.secondaryRefereeId || defaults?.tableAssistantId)
+    !!(defaults?.mainRefereeId || defaults?.secondaryRefereeId || defaults?.tableAssistantId || defaults?.additionalRefereeId)
   );
 
   function handleRefereeChange() {
@@ -70,7 +71,8 @@ export function GameForm({
     const hasAny = !!(
       formData.get("mainRefereeId") ||
       formData.get("secondaryRefereeId") ||
-      formData.get("tableAssistantId")
+      formData.get("tableAssistantId") ||
+      formData.get("additionalRefereeId")
     );
     setHasReferee(hasAny);
   }
@@ -267,6 +269,13 @@ export function GameForm({
               label="Asistente de mesa"
               referees={referees}
               defaultValue={defaults?.tableAssistantId}
+              onChange={handleRefereeChange}
+            />
+            <RefereeSelect
+              name="additionalRefereeId"
+              label="Árbitro adicional"
+              referees={referees}
+              defaultValue={defaults?.additionalRefereeId}
               onChange={handleRefereeChange}
             />
           </div>

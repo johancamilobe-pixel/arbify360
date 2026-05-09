@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "GameRole" ADD VALUE 'ADDITIONAL_REFEREE';

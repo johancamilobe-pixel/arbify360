@@ -24,6 +24,7 @@ enum GameRole {
   MAIN_REFEREE // Árbitro principal de campo
   SECONDARY_REFEREE // Árbitro secundario de campo
   TABLE_ASSISTANT // Asistente de mesa
+  ADDITIONAL_REFEREE // Árbitro adicional
 }
 
 enum GameStatus {
