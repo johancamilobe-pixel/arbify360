@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { X, Building2, User } from "lucide-react";
 
 export default function SignInPage() {
@@ -13,10 +12,27 @@ export default function SignInPage() {
   const [error, setError]         = useState("");
   const [loading, setLoading]     = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [animateIn, setAnimateIn] = useState(false);
   const [mounted, setMounted]     = useState(false);
   const router = useRouter();
 
   useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    if (showModal) {
+      // Pequeño delay para que la animación se vea
+      requestAnimationFrame(() => setAnimateIn(true));
+    } else {
+      setAnimateIn(false);
+    }
+  }, [showModal]);
+
+  function openModal() { setShowModal(true); }
+
+  function closeModal() {
+    setAnimateIn(false);
+    setTimeout(() => setShowModal(false), 200);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,6 +54,7 @@ export default function SignInPage() {
 
   const modal = (
     <div
+      onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
       style={{
         position: "fixed",
         inset: 0,
@@ -45,21 +62,30 @@ export default function SignInPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "rgba(0,0,0,0.75)",
-        backdropFilter: "blur(4px)",
+        backgroundColor: animateIn ? "rgba(0,0,0,0.75)" : "rgba(0,0,0,0)",
+        backdropFilter: animateIn ? "blur(4px)" : "blur(0px)",
+        transition: "background-color 200ms ease, backdrop-filter 200ms ease",
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
     >
-      <div style={{ backgroundColor: "hsl(220, 14%, 20%)", border: "1px solid hsl(220, 12%, 32%)" }} className="rounded-xl p-6 w-full max-w-sm mx-4 space-y-5 shadow-2xl">
-        {/* Header modal */}
-        <div className="flex items-center justify-between">
+      <div
+        style={{
+          backgroundColor: "hsl(220, 14%, 20%)",
+          border: "1px solid hsl(220, 12%, 32%)",
+          transform: animateIn ? "scale(1) translateY(0)" : "scale(0.95) translateY(16px)",
+          opacity: animateIn ? 1 : 0,
+          transition: "transform 200ms ease, opacity 200ms ease",
+        }}
+        className="rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-lg font-bold text-foreground">Crear cuenta</h2>
             <p className="text-muted-foreground text-sm mt-0.5">¿Cómo quieres registrarte?</p>
           </div>
           <button
-            onClick={() => setShowModal(false)}
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            onClick={closeModal}
+            className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-white/5"
           >
             <X className="w-5 h-5" />
           </button>
@@ -70,9 +96,9 @@ export default function SignInPage() {
           <button
             onClick={() => window.location.href = "/register/academy"}
             style={{ backgroundColor: "hsl(220, 14%, 26%)", border: "1px solid hsl(220, 12%, 32%)" }}
-            className="w-full flex items-center gap-4 p-4 rounded-xl hover:border-brand-500 transition-colors group text-left"
+            className="w-full flex items-center gap-4 p-4 rounded-xl hover:border-brand-500 transition-all hover:scale-[1.01] text-left group"
           >
-            <div className="w-10 h-10 rounded-lg bg-brand-500 text-white flex items-center justify-center shrink-0">
+            <div className="w-11 h-11 rounded-xl bg-brand-500 text-white flex items-center justify-center shrink-0 shadow-lg group-hover:bg-brand-600 transition-colors">
               <Building2 className="w-5 h-5" />
             </div>
             <div>
@@ -84,9 +110,9 @@ export default function SignInPage() {
           <button
             onClick={() => window.location.href = "/register"}
             style={{ backgroundColor: "hsl(220, 14%, 26%)", border: "1px solid hsl(220, 12%, 32%)" }}
-            className="w-full flex items-center gap-4 p-4 rounded-xl hover:border-brand-500 transition-colors group text-left"
+            className="w-full flex items-center gap-4 p-4 rounded-xl hover:border-brand-500 transition-all hover:scale-[1.01] text-left group"
           >
-            <div className="w-10 h-10 rounded-lg bg-brand-500 text-white flex items-center justify-center shrink-0">
+            <div className="w-11 h-11 rounded-xl bg-brand-500 text-white flex items-center justify-center shrink-0 shadow-lg group-hover:bg-brand-600 transition-colors">
               <User className="w-5 h-5" />
             </div>
             <div>
@@ -146,7 +172,7 @@ export default function SignInPage() {
         <p className="text-center text-sm text-muted-foreground">
           ¿No tienes cuenta?{" "}
           <button
-            onClick={() => setShowModal(true)}
+            onClick={openModal}
             className="text-brand-500 hover:underline font-medium"
           >
             Regístrate

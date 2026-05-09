@@ -3,13 +3,19 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Rutas que NO requieren autenticación
-const PUBLIC_PATHS = ["/sign-in", "/api/wompi"];
+const PUBLIC_PATHS = [
+  "/sign-in",
+  "/register",
+  "/api/wompi",
+  "/api/academies",
+];
 
 // Rutas que NO requieren verificación de suscripción
 const SUBSCRIPTION_EXEMPT = [
   "/subscription",
   "/select-academy",
   "/sign-in",
+  "/register",
   "/api/",
 ];
 
@@ -66,7 +72,6 @@ export async function middleware(request: NextRequest) {
 
     if (!isExempt && potentialAcademyId !== "select-academy") {
       try {
-        // Verificar suscripción directamente con DB via API interna
         const subCheckUrl = new URL(
           `/api/subscription/check?academyId=${potentialAcademyId}`,
           request.url
