@@ -4,12 +4,19 @@ import AcademySelector from "./academy-selector";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { SignOutButton } from "./sign-out-button";
 
+const SUPERADMIN_EMAIL = "johancamilobe@gmail.com";
+
 export const metadata = { title: "Seleccionar academia" };
 
 export default async function SelectAcademyPage() {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/sign-in");
+
+  // SuperAdmin → redirigir al panel
+  if (user.email === SUPERADMIN_EMAIL) {
+    redirect("/superadmin");
+  }
 
   const academies = await getUserAcademies();
 

@@ -2,6 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+// Email del SuperAdmin — único usuario con acceso a /superadmin
+const SUPERADMIN_EMAIL = "johancamilobe@gmail.com";
+
 // Rutas que NO requieren autenticación
 const PUBLIC_PATHS = [
   "/sign-in",
@@ -16,6 +19,7 @@ const SUBSCRIPTION_EXEMPT = [
   "/select-academy",
   "/sign-in",
   "/register",
+  "/superadmin",
   "/api/",
 ];
 
@@ -59,13 +63,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
+  // Proteger rutas /superadmin — solo el SuperAdmin puede acceder
+  if (pathname.startsWith("/superadmin")) {
+    if (!user || user.email !== SUPERADMIN_EMAIL) {
+      return NextResponse.redirect(new URL("/select-academy", request.url));
+    }
+    return response;
+  }
+
   // Verificar suscripción para rutas de academia
-  // Patrón: /{academyId}/...
   const academyMatch = pathname.match(/^\/([^/]+)(\/.*)?$/);
   if (academyMatch && user) {
     const potentialAcademyId = academyMatch[1];
 
-    // Ignorar rutas especiales
     const isExempt = SUBSCRIPTION_EXEMPT.some((exempt) =>
       pathname.includes(exempt)
     );
