@@ -34,6 +34,7 @@ export const GAME_ROLE_LABELS: Record<string, string> = {
   MAIN_REFEREE:      "Árbitro principal",
   SECONDARY_REFEREE: "Árbitro secundario",
   TABLE_ASSISTANT:   "Asistente de mesa",
+  ADDITIONAL_REFEREE: "Árbitro adicional",
 };
 
 export const GAME_STATUS_LABELS: Record<string, string> = {
