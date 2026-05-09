@@ -4,12 +4,14 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { X, Building2, User } from "lucide-react";
 
 export default function SignInPage() {
-  const [email, setEmail]       = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError]       = useState("");
-  const [loading, setLoading]   = useState(false);
+  const [email, setEmail]         = useState("");
+  const [password, setPassword]   = useState("");
+  const [error, setError]         = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -18,10 +20,7 @@ export default function SignInPage() {
     setError("");
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       setError("Email o contraseña incorrectos");
@@ -66,9 +65,7 @@ export default function SignInPage() {
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-red-500">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-500">{error}</p>}
 
           <button
             type="submit"
@@ -81,11 +78,64 @@ export default function SignInPage() {
 
         <p className="text-center text-sm text-muted-foreground">
           ¿No tienes cuenta?{" "}
-          <Link href="/register" className="text-brand-500 hover:underline font-medium">
+          <button
+            onClick={() => setShowModal(true)}
+            className="text-brand-500 hover:underline font-medium"
+          >
             Regístrate
-          </Link>
+          </button>
         </p>
       </div>
+
+      {/* Modal de selección */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm mx-4 space-y-5">
+            {/* Header modal */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Crear cuenta</h2>
+                <p className="text-muted-foreground text-sm mt-0.5">¿Cómo quieres registrarte?</p>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Opciones */}
+            <div className="space-y-3">
+              <Link
+                href="/register/academy"
+                className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-brand-500 hover:bg-brand-50 transition-colors group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center shrink-0 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground text-sm">Registrar academia</p>
+                  <p className="text-muted-foreground text-xs mt-0.5">Crea y administra tu academia de árbitros</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/register"
+                className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-brand-500 hover:bg-brand-50 transition-colors group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center shrink-0 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground text-sm">Soy árbitro</p>
+                  <p className="text-muted-foreground text-xs mt-0.5">Solicita ingreso a una academia existente</p>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
