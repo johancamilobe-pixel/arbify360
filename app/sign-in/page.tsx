@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -12,7 +13,10 @@ export default function SignInPage() {
   const [error, setError]         = useState("");
   const [loading, setLoading]     = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [mounted, setMounted]     = useState(false);
   const router = useRouter();
+
+  useEffect(() => { setMounted(true); }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,8 +36,60 @@ export default function SignInPage() {
     router.refresh();
   }
 
+  const modal = (
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.5)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
+    >
+      <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm mx-4 space-y-5">
+        {/* Header modal */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-foreground">Crear cuenta</h2>
+            <p className="text-muted-foreground text-sm mt-0.5">¿Cómo quieres registrarte?</p>
+          </div>
+          <button
+            onClick={() => setShowModal(false)}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Opciones */}
+        <div className="space-y-3">
+          <Link
+            href="/register/academy"
+            className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-brand-500 hover:bg-brand-50 transition-colors group"
+          >
+            <div className="w-10 h-10 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center shrink-0 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+              <Building2 className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground text-sm">Registrar academia</p>
+              <p className="text-muted-foreground text-xs mt-0.5">Crea y administra tu academia de árbitros</p>
+            </div>
+          </Link>
+
+          <Link
+            href="/register"
+            className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-brand-500 hover:bg-brand-50 transition-colors group"
+          >
+            <div className="w-10 h-10 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center shrink-0 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+              <User className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground text-sm">Soy árbitro</p>
+              <p className="text-muted-foreground text-xs mt-0.5">Solicita ingreso a una academia existente</p>
+            </div>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-background isolate">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="bg-card border border-border rounded-xl p-8 w-full max-w-md space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">ArbiFy360</h1>
@@ -87,55 +143,7 @@ export default function SignInPage() {
         </p>
       </div>
 
-      {/* Modal de selección */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-sm mx-4 space-y-5">
-            {/* Header modal */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-foreground">Crear cuenta</h2>
-                <p className="text-muted-foreground text-sm mt-0.5">¿Cómo quieres registrarte?</p>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Opciones */}
-            <div className="space-y-3">
-              <Link
-                href="/register/academy"
-                className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-brand-500 hover:bg-brand-50 transition-colors group"
-              >
-                <div className="w-10 h-10 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center shrink-0 group-hover:bg-brand-500 group-hover:text-white transition-colors">
-                  <Building2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground text-sm">Registrar academia</p>
-                  <p className="text-muted-foreground text-xs mt-0.5">Crea y administra tu academia de árbitros</p>
-                </div>
-              </Link>
-
-              <Link
-                href="/register"
-                className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-brand-500 hover:bg-brand-50 transition-colors group"
-              >
-                <div className="w-10 h-10 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center shrink-0 group-hover:bg-brand-500 group-hover:text-white transition-colors">
-                  <User className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground text-sm">Soy árbitro</p>
-                  <p className="text-muted-foreground text-xs mt-0.5">Solicita ingreso a una academia existente</p>
-                </div>
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
+      {mounted && showModal && createPortal(modal, document.body)}
     </div>
   );
 }
