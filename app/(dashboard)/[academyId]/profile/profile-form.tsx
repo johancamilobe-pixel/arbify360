@@ -4,19 +4,22 @@ import { useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { updateMyProfile } from "@/actions/profile";
 import { Loader2, Check } from "lucide-react";
+import { RefereePhotoUpload } from "@/app/(dashboard)/[academyId]/referees/[refereeId]/referee-photo-upload";
 
 interface Props {
   academyId: string;
+  userId:    string;
+  photoUrl:  string | null;
   defaults: {
-    firstName:      string;
-    lastName:       string;
-    email:          string;
-    documentType?:  string;
+    firstName:       string;
+    lastName:        string;
+    email:           string;
+    documentType?:   string;
     documentNumber?: string;
-    birthDate?:     string;
-    phone?:         string;
-    phone2?:        string;
-    licenseNumber?: string;
+    birthDate?:      string;
+    phone?:          string;
+    phone2?:         string;
+    licenseNumber?:  string;
   };
 }
 
@@ -38,7 +41,7 @@ function calculateAge(birthDate: string): number | null {
   return age >= 0 ? age : null;
 }
 
-export function ProfileForm({ academyId, defaults }: Props) {
+export function ProfileForm({ academyId, userId, photoUrl, defaults }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError]            = useState<string | null>(null);
@@ -47,6 +50,7 @@ export function ProfileForm({ academyId, defaults }: Props) {
   const [saved, setSaved]             = useState(false);
 
   const age = useMemo(() => calculateAge(birthDate), [birthDate]);
+  const fullName = `${defaults.firstName} ${defaults.lastName}`.trim();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -78,6 +82,17 @@ export function ProfileForm({ academyId, defaults }: Props) {
           <Check className="w-4 h-4" /> Perfil actualizado correctamente
         </div>
       )}
+
+      {/* Foto de perfil */}
+      <div className="bg-card rounded-xl border border-border p-5">
+        <h2 className="font-semibold text-foreground mb-4">Foto de perfil</h2>
+        <RefereePhotoUpload
+          academyId={academyId}
+          userId={userId}
+          photoUrl={photoUrl}
+          name={fullName || "Usuario"}
+        />
+      </div>
 
       {/* Datos personales */}
       <div className="bg-card rounded-xl border border-border p-5 space-y-4">
@@ -117,7 +132,6 @@ export function ProfileForm({ academyId, defaults }: Props) {
           </Field>
         </div>
 
-        {/* Email solo lectura */}
         <Field label="Email">
           <div className="flex items-center h-[38px] px-3 bg-background border border-border rounded-lg">
             <span className="text-sm text-muted-foreground">{defaults.email}</span>
