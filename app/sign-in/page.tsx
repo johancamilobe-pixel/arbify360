@@ -140,7 +140,7 @@ export default function SignInPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="tu@email.com"
               required
             />
@@ -152,7 +152,7 @@ export default function SignInPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="••••••••"
               required
             />
