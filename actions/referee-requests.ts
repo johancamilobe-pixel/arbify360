@@ -61,6 +61,9 @@ export async function createRefereeRequest(data: {
 
     if (authError || !authData.user) {
       console.error("Error creando usuario en Supabase:", authError);
+      if (authError?.code === "email_exists") {
+        return { error: "Ya existe una cuenta con este email" };
+      }
       return { error: "Error al crear la cuenta. Intenta de nuevo." };
     }
 

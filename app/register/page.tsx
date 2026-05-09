@@ -32,7 +32,7 @@ export default function RegisterPage() {
   useEffect(() => {
     async function loadAcademies() {
       try {
-        const res = await fetch("/api/academies");
+        const res = await fetch("/api/academies", { cache: "no-store" });
         const data = await res.json();
         setAcademies(data);
       } catch {
