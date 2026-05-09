@@ -221,4 +221,4 @@ function Field({ label, error, children }: { label: string; error?: string; chil
   );
 }
 
-const inputClass = "w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent bg-card";
+const inputClass = "w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent bg-white text-black placeholder:text-gray-400";

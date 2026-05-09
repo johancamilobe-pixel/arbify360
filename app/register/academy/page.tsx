@@ -83,7 +83,7 @@ export default function RegisterAcademyPage() {
                 name="academyName"
                 value={form.academyName}
                 onChange={handleChange}
-                className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 placeholder="Academia de Árbitros XYZ"
                 required
               />
@@ -104,7 +104,7 @@ export default function RegisterAcademyPage() {
                     name="firstName"
                     value={form.firstName}
                     onChange={handleChange}
-                    className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
                     placeholder="Johan"
                     required
                   />
@@ -116,7 +116,7 @@ export default function RegisterAcademyPage() {
                     name="lastName"
                     value={form.lastName}
                     onChange={handleChange}
-                    className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
                     placeholder="Camilo"
                     required
                   />
@@ -130,7 +130,7 @@ export default function RegisterAcademyPage() {
                   name="email"
                   value={form.email}
                   onChange={handleChange}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="tu@email.com"
                   required
                 />
@@ -143,7 +143,7 @@ export default function RegisterAcademyPage() {
                   name="password"
                   value={form.password}
                   onChange={handleChange}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="••••••••"
                   required
                 />
@@ -156,7 +156,7 @@ export default function RegisterAcademyPage() {
                   name="confirmPassword"
                   value={form.confirmPassword}
                   onChange={handleChange}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="••••••••"
                   required
                 />
