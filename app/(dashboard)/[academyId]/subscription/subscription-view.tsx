@@ -179,9 +179,10 @@ export function SubscriptionView({ academyId, academyName, isAdmin, subscription
       )}
 
       {!isAdmin && (
-        <div className="bg-muted rounded-xl p-5 text-center">
-          <p className="text-sm text-muted-foreground">
-            El pago de la suscripción lo gestiona el administrador de la academia.
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center space-y-2">
+          <p className="text-sm font-semibold text-amber-800">Acceso restringido</p>
+          <p className="text-sm text-amber-700">
+            Debes renovar tu suscripción. Ponte en contacto con el administrador de tu academia.
           </p>
         </div>
       )}
