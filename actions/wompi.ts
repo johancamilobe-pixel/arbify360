@@ -11,7 +11,7 @@ export async function generateWompiUrl(academyId: string): Promise<string> {
   const amount       = 1000000; // 10.000 COP en centavos
   const currency     = "COP";
   const reference    = `${academyId}-${Date.now()}`;
-  const redirectUrl  = `${process.env.NEXT_PUBLIC_APP_URL}/${academyId}`;
+  const redirectUrl  = `${process.env.NEXT_PUBLIC_APP_URL}/${academyId}/subscription?payment=done&ref=${reference}`;
 
   // Calcular firma de integridad: SHA256(reference + amount + currency + secret)
   const toSign = `${reference}${amount}${currency}${integrityKey}`;

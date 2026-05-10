@@ -2,6 +2,8 @@ import { requireAcademyAccess } from "@/lib/auth";
 import { getSubscription } from "@/actions/subscription";
 import { prisma } from "@/lib/prisma";
 import { SubscriptionView } from "./subscription-view";
+import { PaymentHandler } from "./payment-handler";
+import { Suspense } from "react";
 
 interface Props {
   params: { academyId: string };
@@ -19,11 +21,18 @@ export default async function SubscriptionPage({ params }: Props) {
   ]);
 
   return (
-    <SubscriptionView
-      academyId={academyId}
-      academyName={academy?.name ?? ""}
-      isAdmin={context.role === "ADMIN"}
-      subscription={sub ? JSON.parse(JSON.stringify(sub)) : null}
-    />
+    <>
+      {/* Detecta automáticamente si viene de un pago exitoso */}
+      <Suspense>
+        <PaymentHandler academyId={academyId} />
+      </Suspense>
+
+      <SubscriptionView
+        academyId={academyId}
+        academyName={academy?.name ?? ""}
+        isAdmin={context.role === "ADMIN"}
+        subscription={sub ? JSON.parse(JSON.stringify(sub)) : null}
+      />
+    </>
   );
 }

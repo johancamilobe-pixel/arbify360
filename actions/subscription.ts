@@ -126,3 +126,44 @@ export async function activateSubscription(
 
   revalidatePath(`/${academyId}/subscription`);
 }
+
+// ─── Confirmar pago desde redirect de Wompi ───────────────────────────────────
+
+export async function confirmPayment(academyId: string, reference: string): Promise<{ success: boolean }> {
+  try {
+    const now = new Date();
+
+    const existing = await prisma.subscription.findUnique({
+      where: { academyId },
+      select: { subscriptionEndsAt: true, status: true },
+    });
+
+    // Extender desde hoy o desde fecha actual si está activa
+    let baseDate = now;
+    if (
+      existing?.status === "ACTIVE" &&
+      existing.subscriptionEndsAt &&
+      existing.subscriptionEndsAt > now
+    ) {
+      baseDate = existing.subscriptionEndsAt;
+    }
+
+    const newEndsAt = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    await prisma.subscription.update({
+      where: { academyId },
+      data: {
+        status:             "ACTIVE",
+        subscriptionEndsAt: newEndsAt,
+        lastPaymentAt:      now,
+        lastPaymentRef:     reference,
+      },
+    });
+
+    revalidatePath(`/${academyId}/subscription`);
+    return { success: true };
+  } catch (err) {
+    console.error("Error confirmando pago:", err);
+    return { success: false };
+  }
+}
